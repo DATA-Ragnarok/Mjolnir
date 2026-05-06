@@ -1,0 +1,28 @@
+import Epic, { Epic as EpicType, Status } from '../models/Epic.js';
+
+export class EpicDAL {
+  static async findAll() {
+    return await Epic.find();
+  }
+
+  static async findById(id: string) {
+    return await Epic.findById(id);
+  }
+
+  static async create(data: Partial<EpicType>) {
+    const epic = new Epic(data);
+    return await epic.save();
+  }
+
+  static async update(id: string, data: Partial<EpicType>) {
+    return await Epic.findByIdAndUpdate(id, data, { new: true });
+  }
+
+  static async updateStatus(id: string, status: Status) {
+    return await Epic.findByIdAndUpdate(id, { status }, { new: true });
+  }
+
+  static async delete(id: string) {
+    return await Epic.findByIdAndDelete(id);
+  }
+}
