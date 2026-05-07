@@ -56,9 +56,38 @@ Tab 1 (Epics): Separated Card List - grouped by status into collapsible sections
     - Sectional: If a specific status section is empty, show a subtle "All clear" placeholder with a coffee icon.
 - Interaction: Clicking a card opens the interactive `EpicModal` for viewing and editing. Creating a new epic also uses the `EpicModal`.
 
-Tab 2 (Features): Grouped by Epic.
+Tab 2 (Features): Status Board with Epic Context - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done).
+- Filtering & Context:
+    - Global Epic Filter: A dropdown or pill-based selector to filter features by their parent Epic.
+    - Epic Context Bar: When a single Epic is filtered, display a slim header showing the parent Epic's status and overall progress (story points).
+- Card Details: Each card displays Title, Status (colored badge), Description (max 2 lines), User Story Count, Parent Epic Name (subtle tag, hidden if filtered by Epic), Last Updated Date, and a Progress Bar (Story Points).
+- Empty States:
+    - Global: If no features exist, show `EmptyState` with a "Create your first Feature" CTA.
+    - Sectional: "All clear" placeholder for empty status sections.
+- Interaction: Clicking a card opens the `FeatureModal` for viewing and editing. Creating a new feature requires selecting a parent Epic within the `FeatureModal`.
+- Navigation: Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
 
-Tab 3 (Sprints): Two-pane layout. Left: Backlog (Stories with sprintId: null). Right: Kanban Board (Stories for the active sprintId).
+Tab 3 (Sprints): Hybrid Backlog & Kanban View - A dual-pane layout for planning and execution.
+- Left Pane (Backlog - 1/3 width):
+    - Searchable list of User Stories where `sprintId` is null.
+    - Displays story title, points, and parent hierarchy (Epic > Feature).
+    - Drag stories from here into the Kanban board to assign them to the current sprint.
+- Right Pane (Kanban Board - 2/3 width):
+    - Header & Actions:
+        - Sprint Selector: Dropdown to switch between the Active Sprint and Planned Sprints.
+        - Create Sprint Button: A "+ Create Sprint" button next to the selector that opens the `SprintModal`.
+    - Sprint Info: Displays Sprint Name, Date Range, and a Progress Bar (Story Points completed vs. total).
+    - Columns: 5 status-based columns (To Do, In Progress, Blocked, Waiting for MR, Done).
+- Story Card Details:
+    - Metadata: Title, Story Points, Feature Name, and Assigned User (avatar/initials).
+    - WIP Glow: 
+        - Red Border/Glow: If a user has >1 story in "In Progress".
+        - Yellow Border/Glow: If a user has >1 story in "Waiting for MR".
+- Interaction & DND:
+    - Use `dnd-kit` for all movements (Backlog to Kanban, Column to Column).
+    - Clicking a card opens the `UserStoryModal` for editing and assignment (Feature, Sprint, User).
+    - Dragging a story to the "Done" column triggers the "Status Inheritance" logic.
+- Navigation: Direct link from the Features page (clicking "X User Stories") should open the Backlog and highlight the relevant stories.
 
 Drag & Drop: Use dnd-kit for vertical and horizontal sorting.
 

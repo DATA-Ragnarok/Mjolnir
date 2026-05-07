@@ -1,18 +1,12 @@
 import React from 'react';
-import { Status, EpicWithProgress } from '../types';
+import { EpicWithProgress } from '../types';
 import ProgressBar from './ProgressBar';
 import { Layers, Calendar } from 'lucide-react';
+import { STATUS_CONFIG } from '../constants/status';
 
 type EpicCardProps = {
   epic: EpicWithProgress;
   onClick: (epic: EpicWithProgress) => void;
-};
-
-const statusColors: Record<Status, string> = {
-  'To Do': 'bg-gray-100 text-gray-800 border-gray-200',
-  'In Progress': 'bg-blue-100 text-blue-800 border-blue-200',
-  'Blocked': 'bg-red-100 text-red-800 border-red-200',
-  'Done': 'bg-green-100 text-green-800 border-green-200',
 };
 
 const EpicCard: React.FC<EpicCardProps> = ({ epic, onClick }) => {
@@ -20,6 +14,8 @@ const EpicCard: React.FC<EpicCardProps> = ({ epic, onClick }) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
+
+  const statusStyle = STATUS_CONFIG[epic.status];
 
   return (
     <div
@@ -30,7 +26,7 @@ const EpicCard: React.FC<EpicCardProps> = ({ epic, onClick }) => {
         <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate pr-2">
           {epic.title}
         </h3>
-        <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border ${statusColors[epic.status]}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border ${statusStyle.cardBg} ${statusStyle.text} ${statusStyle.border}`}>
           {epic.status}
         </span>
       </div>
