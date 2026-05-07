@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Epic, Status, Feature } from '../types';
 import { epicService } from '../services/epicService';
 import { featureService } from '../services/featureService';
@@ -18,18 +18,11 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
   const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
-  useEffect(() => {
-    if (epic) {
-      fetchFeatures(epic._id);
+  const fetchFeatures = useCallback(async (epicId: string, silent = false) => {
+    if (!silent) {
+      setIsLoadingFeatures(true);
     }
-  }, [epic]);
-
-  const isDirty = title !== (epic?.title || '') || 
-                  description !== (epic?.description || '') || 
-                  status !== (epic?.status || 'To Do');
-
-  const fetchFeatures = async (epicId: string) => {
-    setIsLoadingFeatures(true);
+    
     try {
       const data = await featureService.getFeatures(epicId);
       setFeatures(data);
@@ -38,7 +31,20 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
     } finally {
       setIsLoadingFeatures(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (epic?._id) {
+      fetchFeatures(epic._id);
+      
+      const interval = setInterval(() => fetchFeatures(epic._id, true), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [epic?._id, fetchFeatures]);
+
+  const isDirty = title !== (epic?.title || '') || 
+                  description !== (epic?.description || '') || 
+                  status !== (epic?.status || 'To Do');
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
