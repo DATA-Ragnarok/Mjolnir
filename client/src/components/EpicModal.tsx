@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Epic, Status, Feature } from '../types';
-import { epicService, EpicWithProgress } from '../services/epicService';
+import { Epic, Status, Feature, EpicWithProgress } from '../types';
+import { epicService } from '../services/epicService';
 import { featureService } from '../services/featureService';
 import { 
   X, 

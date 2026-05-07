@@ -4,9 +4,9 @@ import { useEpics } from '../hooks/useEpics';
 import EpicCard from '../components/EpicCard';
 import EpicModal from '../components/EpicModal';
 import CollapsibleSection from '../components/CollapsibleSection';
-import { Epic } from '../types';
-import { EpicWithProgress } from '../services/epicService';
-import { Coffee, Plus } from 'lucide-react';
+import { Epic, EpicWithProgress } from '../types';
+import { Coffee, Plus, Layers } from 'lucide-react';
+import EmptyState from '../components/EmptyState';
 
 const EpicsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -114,17 +114,23 @@ const EpicsPage: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {renderSection('Blocked', blockedEpics)}
-        {renderSection('In Progress', inProgressEpics)}
-        {renderSection('To Do', toDoEpics)}
-        {renderSection('Done', doneEpics)}
+        {epics.length > 0 ? (
+          <>
+            {renderSection('Blocked', blockedEpics)}
+            {renderSection('In Progress', inProgressEpics)}
+            {renderSection('To Do', toDoEpics)}
+            {renderSection('Done', doneEpics)}
+          </>
+        ) : !loading && !error && (
+          <EmptyState
+            icon={<Layers size={48} />}
+            title="No epics found"
+            description="Epics represent high-level goals or project milestones. Create your first epic to start organizing your work into features and stories."
+            actionText="Create your first Epic"
+            onAction={handleCreateClick}
+          />
+        )}
       </div>
-
-      {epics.length === 0 && !loading && (
-        <div className="py-12 text-center bg-white rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-gray-500">No epics found. Create one to get started!</p>
-        </div>
-      )}
 
       {isModalOpen && (
         <EpicModal
