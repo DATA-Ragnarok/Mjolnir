@@ -23,11 +23,14 @@ describe('Sprint E2E Tests', () => {
 
   beforeAll(async () => {
     await connectTestDB();
+  });
+
+  beforeEach(async () => {
+    await clearTestDB();
     token = await getAuthToken();
   });
 
   afterAll(async () => {
-    await clearTestDB();
     await closeTestDB();
   });
 
@@ -46,12 +49,22 @@ describe('Sprint E2E Tests', () => {
   });
 
   it('should get all sprints', async () => {
+    await request(app)
+      .post('/api/sprints')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Initial Sprint',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+
     const response = await request(app)
       .get('/api/sprints')
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
   });
 
   it('should trigger sprint migration', async () => {
@@ -111,5 +124,52 @@ describe('Sprint E2E Tests', () => {
       .set('Authorization', `Bearer ${token}`);
     
     expect(updatedStoryRes.body.some((s: any) => s._id === storyRes.body._id)).toBe(true);
+  });
+
+  it('should update a sprint', async () => {
+    const createRes = await request(app)
+      .post('/api/sprints')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Sprint to Update',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+    
+    const sprintId = createRes.body._id;
+
+    const response = await request(app)
+      .put(`/api/sprints/${sprintId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Updated Sprint Name' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.name).toBe('Updated Sprint Name');
+  });
+
+  it('should delete a sprint', async () => {
+    const createRes = await request(app)
+      .post('/api/sprints')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Sprint to Delete',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+    
+    const sprintId = createRes.body._id;
+
+    const response = await request(app)
+      .delete(`/api/sprints/${sprintId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Sprint deleted');
+
+    const getRes = await request(app)
+      .get('/api/sprints')
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(getRes.body.some((s: any) => s._id === sprintId)).toBe(false);
   });
 });

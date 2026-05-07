@@ -23,11 +23,14 @@ describe('Epic E2E Tests', () => {
 
   beforeAll(async () => {
     await connectTestDB();
+  });
+
+  beforeEach(async () => {
+    await clearTestDB();
     token = await getAuthToken();
   });
 
   afterAll(async () => {
-    await clearTestDB();
     await closeTestDB();
   });
 
@@ -46,6 +49,11 @@ describe('Epic E2E Tests', () => {
   });
 
   it('should get all epics', async () => {
+    await request(app)
+      .post('/api/epics')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Initial Epic' });
+
     const response = await request(app)
       .get('/api/epics')
       .set('Authorization', `Bearer ${token}`);

@@ -46,8 +46,10 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 const startServer = async () => {
   try {
-    await mongoose.connect(config.mongoUri);
-    console.log('Connected to MongoDB');
+    await mongoose.connect(config.mongoUri, {
+      dbName: config.dbName
+    });
+    console.log(`Connected to MongoDB database: ${config.dbName}`);
     
     if (process.env['NODE_ENV'] !== 'test') {
       app.listen(config.port, () => {
