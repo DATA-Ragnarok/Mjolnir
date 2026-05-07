@@ -50,9 +50,9 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
                   status !== (feature?.status || 'To Do') ||
                   epicId !== (feature?.epicId || initialEpicId || '');
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent, shouldClose = true) => {
     if (e) e.preventDefault();
-    if (!title.trim() || !epicId) return;
+    if (!title.trim() || !epicId) return false;
 
     setIsSubmitting(true);
     try {
@@ -62,9 +62,11 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
         await featureService.createFeature({ title, description, status, epicId });
       }
       onSubmit();
-      onClose();
+      if (shouldClose) onClose();
+      return true;
     } catch (error) {
       console.error('Failed to save feature:', error);
+      return false;
     } finally {
       setIsSubmitting(false);
     }

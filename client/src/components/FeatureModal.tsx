@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Feature, FeatureWithProgress } from '../types';
 import { Trash2, Clock } from 'lucide-react';
 import { useFeatureForm } from '../hooks/useFeatureForm';
@@ -20,6 +21,7 @@ type FeatureModalProps = {
 };
 
 const FeatureModal: React.FC<FeatureModalProps> = ({ isOpen, onClose, onSubmit, feature, initialEpicId }) => {
+  const navigate = useNavigate();
   const {
     title,
     setTitle,
@@ -38,6 +40,14 @@ const FeatureModal: React.FC<FeatureModalProps> = ({ isOpen, onClose, onSubmit, 
     handleSubmit,
     handleDelete
   } = useFeatureForm({ feature, onClose, onSubmit, initialEpicId });
+
+  const handleGoToEpic = async () => {
+    if (isDirty) {
+      const success = await handleSubmit(undefined, false);
+      if (!success) return;
+    }
+    navigate(`/epics/${epicId}`);
+  };
 
   if (!isOpen) return null;
 
@@ -88,7 +98,7 @@ const FeatureModal: React.FC<FeatureModalProps> = ({ isOpen, onClose, onSubmit, 
                 {/* Right: Metadata and Stories */}
                 <div className="space-y-8">
                   <StatusSelect status={status} setStatus={setStatus} />
-                  <EpicSelect selectedEpicId={epicId} onChange={setEpicId} />
+                  <EpicSelect selectedEpicId={epicId} onChange={setEpicId} onGoToEpic={handleGoToEpic} />
                   <StoryList stories={userStories} isLoading={isLoadingStories} />
                 </div>
               </div>

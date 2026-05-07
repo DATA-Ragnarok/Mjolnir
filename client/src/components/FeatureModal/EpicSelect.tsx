@@ -1,13 +1,14 @@
 import React from 'react';
-import { Tag, Search } from 'lucide-react';
+import { Tag, Search, ExternalLink } from 'lucide-react';
 import { useEpics } from '../../hooks/useEpics';
 
 type EpicSelectProps = {
   selectedEpicId: string;
   onChange: (epicId: string) => void;
+  onGoToEpic?: () => void;
 };
 
-const EpicSelect: React.FC<EpicSelectProps> = ({ selectedEpicId, onChange }) => {
+const EpicSelect: React.FC<EpicSelectProps> = ({ selectedEpicId, onChange, onGoToEpic }) => {
   const { epics, loading } = useEpics();
 
   return (
@@ -34,9 +35,24 @@ const EpicSelect: React.FC<EpicSelectProps> = ({ selectedEpicId, onChange }) => 
           <Search size={16} />
         </div>
       </div>
-      {loading && epics.length === 0 && (
-        <p className="text-[10px] text-gray-400 animate-pulse font-medium">Loading available epics...</p>
-      )}
+      <div className="flex justify-between items-center px-1">
+        {loading && epics.length === 0 ? (
+          <p className="text-[10px] text-gray-400 animate-pulse font-medium">Loading available epics...</p>
+        ) : (
+          <div /> // Spacer
+        )}
+        
+        {selectedEpicId && onGoToEpic && (
+          <button
+            type="button"
+            onClick={onGoToEpic}
+            className="flex items-center space-x-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-wider group"
+          >
+            <span>Go to Epic</span>
+            <ExternalLink size={10} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 };
