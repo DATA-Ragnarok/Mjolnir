@@ -1,11 +1,5 @@
 import api from './api';
-import { Epic } from '../types';
-
-export type EpicWithProgress = Epic & {
-  totalStoryPoints: number;
-  completedStoryPoints: number;
-  featureCount: number;
-};
+import { Epic, EpicWithProgress } from '../types';
 
 export const epicService = {
   getEpics: async (): Promise<EpicWithProgress[]> => {

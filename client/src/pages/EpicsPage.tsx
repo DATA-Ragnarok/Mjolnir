@@ -126,12 +126,15 @@ const EpicsPage: React.FC = () => {
         </div>
       )}
 
-      <EpicModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSubmit={handleModalSubmit}
-        epic={selectedEpic}
-      />
+      {isModalOpen && (
+        <EpicModal
+          key={selectedEpic?._id || 'new'}
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          epic={selectedEpic}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { epicService, EpicWithProgress } from '../services/epicService';
+import { epicService } from '../services/epicService';
+import { EpicWithProgress } from '../types';
 
 export const useEpics = () => {
   const [epics, setEpics] = useState<EpicWithProgress[]>([]);

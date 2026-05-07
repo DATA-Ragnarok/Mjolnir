@@ -1,6 +1,5 @@
 import React from 'react';
-import { EpicWithProgress } from '../services/epicService';
-import { Status } from '../types';
+import { Status, EpicWithProgress } from '../types';
 import ProgressBar from './ProgressBar';
 import { Layers, Calendar } from 'lucide-react';
 

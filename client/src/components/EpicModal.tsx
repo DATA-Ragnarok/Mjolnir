@@ -29,41 +29,19 @@ const statusConfig = {
 };
 
 const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<Status>('To Do');
+  const [title, setTitle] = useState(epic?.title || '');
+  const [description, setDescription] = useState(epic?.description || '');
+  const [status, setStatus] = useState<Status>(epic?.status || 'To Do');
   const [features, setFeatures] = useState<Feature[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const epicIdRef = React.useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (isOpen) {
-      if (epic) {
-        // Only initialize form if we're opening a DIFFERENT epic
-        if (epicIdRef.current !== epic._id) {
-          setTitle(epic.title);
-          setDescription(epic.description || '');
-          setStatus(epic.status);
-          fetchFeatures(epic._id);
-          epicIdRef.current = epic._id;
-        }
-      } else {
-        // New epic logic
-        if (epicIdRef.current !== undefined) {
-          setTitle('');
-          setDescription('');
-          setStatus('To Do');
-          setFeatures([]);
-          epicIdRef.current = undefined;
-        }
-      }
-    } else {
-      // When closing, reset the ref so it re-initializes next time it opens
-      epicIdRef.current = undefined;
+    if (epic) {
+      fetchFeatures(epic._id);
     }
-  }, [epic, isOpen]);
+  }, []);
 
   const isDirty = title !== (epic?.title || '') || 
                   description !== (epic?.description || '') || 

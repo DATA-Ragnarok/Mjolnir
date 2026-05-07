@@ -24,6 +24,10 @@ describe('Feature E2E Tests', () => {
 
   beforeAll(async () => {
     await connectTestDB();
+  });
+
+  beforeEach(async () => {
+    await clearTestDB();
     token = await getAuthToken();
     
     // Create an epic to link features to
@@ -35,7 +39,6 @@ describe('Feature E2E Tests', () => {
   });
 
   afterAll(async () => {
-    await clearTestDB();
     await closeTestDB();
   });
 

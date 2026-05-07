@@ -11,6 +11,12 @@ export type Epic = {
   updatedAt: string;
 };
 
+export type EpicWithProgress = Epic & {
+  totalStoryPoints: number;
+  completedStoryPoints: number;
+  featureCount: number;
+};
+
 export type Feature = {
   _id: string;
   title: string;

@@ -25,6 +25,10 @@ describe('UserStory E2E Tests', () => {
 
   beforeAll(async () => {
     await connectTestDB();
+  });
+
+  beforeEach(async () => {
+    await clearTestDB();
     token = await getAuthToken();
     
     const epicRes = await request(app)
@@ -41,7 +45,6 @@ describe('UserStory E2E Tests', () => {
   });
 
   afterAll(async () => {
-    await clearTestDB();
     await closeTestDB();
   });
 
@@ -137,5 +140,40 @@ describe('UserStory E2E Tests', () => {
       .set('Authorization', `Bearer ${token}`);
     feature = featureRes.body.find((f: any) => f._id === featureId);
     expect(feature.status).toBe('Done');
+  });
+
+  it('should get all user stories', async () => {
+    await request(app)
+      .post('/api/user-stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Initial Story', featureId, storyPoints: 1 });
+
+    const response = await request(app)
+      .get('/api/user-stories')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+  });
+
+  it('should delete a user story', async () => {
+    const createRes = await request(app)
+      .post('/api/user-stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'Story to Delete',
+        featureId,
+        storyPoints: 1
+      });
+    
+    const storyId = createRes.body._id;
+
+    const response = await request(app)
+      .delete(`/api/user-stories/${storyId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('User story deleted');
   });
 });
