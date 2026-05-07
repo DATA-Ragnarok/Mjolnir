@@ -1,8 +1,8 @@
 import api from './api';
-import { Feature } from '../types';
+import { Feature, FeatureWithProgress } from '../types';
 
 export const featureService = {
-  getFeatures: async (epicId?: string): Promise<Feature[]> => {
+  getFeatures: async (epicId?: string): Promise<FeatureWithProgress[]> => {
     const params = epicId ? { epicId } : {};
     const response = await api.get('/features', { params });
     return response.data;

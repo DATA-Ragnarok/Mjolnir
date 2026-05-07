@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EpicWithProgress } from '../types';
 import ProgressBar from './ProgressBar';
 import { Layers, Calendar } from 'lucide-react';
@@ -10,6 +11,8 @@ type EpicCardProps = {
 };
 
 const EpicCard: React.FC<EpicCardProps> = ({ epic, onClick }) => {
+  const navigate = useNavigate();
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -36,7 +39,13 @@ const EpicCard: React.FC<EpicCardProps> = ({ epic, onClick }) => {
       </p>
 
       <div className="flex items-center space-x-4 mb-6 text-gray-400">
-        <div className="flex items-center space-x-1.5">
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/features?epicId=${epic._id}`);
+          }}
+          className="flex items-center space-x-1.5 hover:text-indigo-600 transition-colors"
+        >
           <Layers size={14} />
           <span className="text-xs font-medium">{epic.featureCount} Features</span>
         </div>

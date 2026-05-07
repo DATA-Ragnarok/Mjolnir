@@ -3,7 +3,7 @@ import { Feature as FeatureType } from '../models/Feature.js';
 
 export class FeatureService {
   static async getAll(filters: any = {}) {
-    return await FeatureDAL.find(filters);
+    return await FeatureDAL.findWithProgress(filters);
   }
 
   static async create(data: Partial<FeatureType>) {

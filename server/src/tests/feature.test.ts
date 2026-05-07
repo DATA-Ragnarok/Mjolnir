@@ -63,7 +63,41 @@ describe('Feature E2E Tests', () => {
 
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
+    // Note: epics are joined so epicId is checked on the resulting object
     expect(response.body.every((f: any) => f.epicId === epicId)).toBe(true);
+  });
+
+  it('should get features with progress metrics', async () => {
+    // 1. Create a feature
+    const featureRes = await request(app)
+      .post('/api/features')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Feature with Progress', epicId });
+    const featureId = featureRes.body._id;
+
+    // 2. Create user stories
+    await request(app)
+      .post('/api/user-stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Story 1', featureId, storyPoints: 5, status: 'Done' });
+
+    await request(app)
+      .post('/api/user-stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Story 2', featureId, storyPoints: 3, status: 'In Progress' });
+
+    // 3. Get features and verify progress
+    const response = await request(app)
+      .get(`/api/features?epicId=${epicId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    const feature = response.body.find((f: any) => f._id === featureId);
+    expect(feature).toBeDefined();
+    expect(feature.userStoryCount).toBe(2);
+    expect(feature.totalStoryPoints).toBe(8);
+    expect(feature.completedStoryPoints).toBe(5);
+    expect(feature.epicTitle).toBe('Epic for Features');
   });
 
   it('should update a feature', async () => {
