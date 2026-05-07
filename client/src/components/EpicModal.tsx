@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Epic, Status, Feature } from '../types';
-import { epicService } from '../services/epicService';
+import { epicService, EpicWithProgress } from '../services/epicService';
 import { featureService } from '../services/featureService';
+import { 
+  X, 
+  Trash2, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  TrendingUp,
+  Layers,
+  Calendar,
+  ChevronRight
+} from 'lucide-react';
 
 type EpicModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: () => void;
   epic?: Epic;
+};
+
+const statusConfig = {
+  'To Do': { color: 'bg-gray-500', light: 'bg-gray-50', text: 'text-gray-800', border: 'border-gray-200', icon: Clock },
+  'In Progress': { color: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-200', icon: TrendingUp },
+  'Blocked': { color: 'bg-red-500', light: 'bg-red-50', text: 'text-red-800', border: 'border-red-200', icon: AlertCircle },
+  'Done': { color: 'bg-green-500', light: 'bg-green-50', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle2 },
 };
 
 const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }) => {
@@ -18,18 +36,32 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const epicIdRef = React.useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (epic) {
-      setTitle(epic.title);
-      setDescription(epic.description || '');
-      setStatus(epic.status);
-      fetchFeatures(epic._id);
+    if (isOpen) {
+      if (epic) {
+        // Only initialize form if we're opening a DIFFERENT epic
+        if (epicIdRef.current !== epic._id) {
+          setTitle(epic.title);
+          setDescription(epic.description || '');
+          setStatus(epic.status);
+          fetchFeatures(epic._id);
+          epicIdRef.current = epic._id;
+        }
+      } else {
+        // New epic logic
+        if (epicIdRef.current !== undefined) {
+          setTitle('');
+          setDescription('');
+          setStatus('To Do');
+          setFeatures([]);
+          epicIdRef.current = undefined;
+        }
+      }
     } else {
-      setTitle('');
-      setDescription('');
-      setStatus('To Do');
-      setFeatures([]);
+      // When closing, reset the ref so it re-initializes next time it opens
+      epicIdRef.current = undefined;
     }
   }, [epic, isOpen]);
 
@@ -50,6 +82,9 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
   };
 
   if (!isOpen) return null;
+
+  const currentStatus = statusConfig[status];
+  const progressPercent = epic ? Math.round(((epic as EpicWithProgress).completedStoryPoints / (epic as EpicWithProgress).totalStoryPoints) * 100) || 0 : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,97 +123,144 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={onClose}>
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
 
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
+        <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-6xl transform transition-all">
+          {/* Progress Ribbon */}
+          <div className={`h-1.5 w-full ${currentStatus.color} transition-colors duration-500`}></div>
+          
           <form onSubmit={handleSubmit}>
-            <div className="bg-white px-6 pt-6 pb-4 sm:p-8 sm:pb-6">
-              <div className="mb-8">
-                {isEditingTitle ? (
-                  <input
-                    type="text"
-                    autoFocus
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    onBlur={() => setIsEditingTitle(false)}
-                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-                    className="text-3xl font-bold text-gray-900 border-b-2 border-indigo-500 focus:outline-none w-full bg-transparent"
-                  />
-                ) : (
-                  <h2 
-                    onClick={() => setIsEditingTitle(true)}
-                    className="text-3xl font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors py-1 px-2 -ml-2 rounded hover:bg-gray-50"
-                  >
-                    {title || 'New Epic'}
-                  </h2>
-                )}
+            <div className="p-8">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-8">
+                <div className="flex-grow mr-4">
+                  {isEditingTitle ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      onBlur={() => setIsEditingTitle(false)}
+                      onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+                      className="text-4xl font-extrabold text-gray-900 border-b-2 border-indigo-500 focus:outline-none w-full bg-transparent py-1"
+                    />
+                  ) : (
+                    <h2 
+                      onClick={() => setIsEditingTitle(true)}
+                      className="text-4xl font-extrabold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors py-1 -ml-1 rounded hover:bg-gray-50 px-2 inline-block"
+                    >
+                      {title || 'New Epic'}
+                    </h2>
+                  )}
+                  {epic && (
+                    <div className="flex items-center mt-2 text-gray-400 space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Calendar size={14} />
+                        <span className="text-xs">Updated {new Date(epic.updatedAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Layers size={14} />
+                        <span className="text-xs">{features.length} Features linked</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                {/* Left Column: Description */}
-                <div className="space-y-6">
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                {/* Left: Description and Main content */}
+                <div className="lg:col-span-2 space-y-8">
                   <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Description</label>
+                    <div className="flex items-center space-x-2 mb-3 text-gray-500">
+                      <Clock size={16} />
+                      <label htmlFor="description" className="text-xs font-bold uppercase tracking-widest">Description</label>
+                    </div>
                     <textarea
                       id="description"
-                      rows={18}
+                      rows={12}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Add a detailed description for this epic..."
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-base leading-relaxed"
+                      placeholder="What is this epic trying to achieve? Define the high-level goals and acceptance criteria..."
+                      className="w-full border-gray-200 rounded-xl shadow-sm py-4 px-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 leading-relaxed transition-all resize-none bg-gray-50/30"
                     />
                   </div>
+
+                  {/* Quick Stats Grid */}
+                  {epic && (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
+                        <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider mb-0.5">Progress</p>
+                        <p className="text-lg font-black text-indigo-700">{progressPercent}%</p>
+                      </div>
+                      <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
+                        <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-0.5">Points</p>
+                        <p className="text-lg font-black text-emerald-700">{(epic as EpicWithProgress).completedStoryPoints} <span className="text-xs font-medium text-emerald-500">/ {(epic as EpicWithProgress).totalStoryPoints}</span></p>
+                      </div>
+                      <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
+                        <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-0.5">Features</p>
+                        <p className="text-lg font-black text-amber-700">{features.length}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Right Column: Status and Features */}
+                {/* Right: Metadata and Features */}
                 <div className="space-y-8">
                   <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Status</label>
-                    <select
-                      id="status"
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as Status)}
-                      className={`mt-1 block w-fit min-w-[140px] border rounded-md shadow-sm py-2 px-3 focus:outline-none transition-all duration-200 font-semibold sm:text-sm ${
-                        status === 'To Do' ? 'border-gray-300 bg-gray-50 text-gray-800 focus:ring-gray-400 shadow-[0_0_10px_-2px_rgba(156,163,175,0.4)]' :
-                        status === 'In Progress' ? 'border-blue-300 bg-blue-50 text-blue-800 focus:ring-blue-400 shadow-[0_0_10px_-2px_rgba(96,165,250,0.4)]' :
-                        status === 'Blocked' ? 'border-red-300 bg-red-50 text-red-800 focus:ring-red-400 shadow-[0_0_10px_-2px_rgba(248,113,113,0.4)]' :
-                        'border-green-300 bg-green-50 text-green-800 focus:ring-green-400 shadow-[0_0_10px_-2px_rgba(74,222,128,0.4)]'
-                      }`}
-                    >
-                      <option value="To Do">To Do</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Blocked">Blocked</option>
-                      <option value="Done">Done</option>
-                    </select>
+                    <label htmlFor="status" className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Status</label>
+                    <div className="relative">
+                      <select
+                        id="status"
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value as Status)}
+                        className={`w-full appearance-none border-2 rounded-xl py-3 pl-12 pr-10 focus:outline-none transition-all duration-300 font-bold ${
+                          status === 'To Do' ? 'border-gray-200 bg-gray-50 text-gray-700' :
+                          status === 'In Progress' ? 'border-blue-200 bg-blue-50 text-blue-700' :
+                          status === 'Blocked' ? 'border-red-200 bg-red-50 text-red-700' :
+                          'border-green-200 bg-green-50 text-green-700'
+                        }`}
+                      >
+                        <option value="To Do">To Do</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Blocked">Blocked</option>
+                        <option value="Done">Done</option>
+                      </select>
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                        {React.createElement(currentStatus.icon, { size: 18, className: currentStatus.text })}
+                      </div>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Child Features</label>
-                    <div className="bg-gray-50 rounded-lg p-6 min-h-[300px] max-h-[450px] overflow-y-auto border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Child Features</label>
+                      <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{features.length}</span>
+                    </div>
+                    
+                    <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
                       {isLoadingFeatures ? (
-                        <div className="flex items-center space-x-2 text-gray-400">
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          <span>Loading features...</span>
+                        <div className="flex items-center justify-center py-12 text-gray-400">
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-gray-300 border-t-indigo-500 rounded-full" />
+                          <span className="text-xs font-medium">Syncing features...</span>
                         </div>
                       ) : features.length > 0 ? (
-                        <ul className="space-y-3">
-                          {features.map((feature) => (
-                            <li key={feature._id} className="text-sm font-medium text-gray-700 bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 transition-colors">
-                              {feature.title}
-                            </li>
-                          ))}
-                        </ul>
+                        features.map((feature) => (
+                          <div key={feature._id} className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-default">
+                            <div className="flex items-center space-x-3 truncate">
+                              <div className={`w-2 h-2 rounded-full ${statusConfig[feature.status].color}`} />
+                              <span className="text-sm font-semibold text-gray-700 truncate">{feature.title}</span>
+                            </div>
+                            <ChevronRight size={16} className="text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                          </div>
+                        ))
                       ) : (
-                        <div className="text-center py-12">
-                          <p className="text-sm text-gray-400 italic">No features linked to this epic yet.</p>
+                        <div className="text-center py-16 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                          <Layers className="mx-auto text-gray-200 mb-2" size={32} />
+                          <p className="text-xs text-gray-400 italic">No features linked yet.</p>
                         </div>
                       )}
                     </div>
@@ -187,12 +269,13 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
               </div>
             </div>
 
-            <div className="bg-gray-50 px-6 py-4 sm:px-8 sm:flex sm:flex-row-reverse border-t border-gray-100">
+            {/* Footer */}
+            <div className="bg-gray-50 px-8 py-5 flex flex-row-reverse items-center gap-3 border-t border-gray-100">
               <button
                 type="submit"
                 disabled={isSubmitting || (!isDirty && !!epic)}
-                className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-6 py-2.5 text-base font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm transition-all ${
-                  isSubmitting || (!isDirty && !!epic) ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                className={`flex-none px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-all active:scale-95 ${
+                  isSubmitting || (!isDirty && !!epic) ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700'
                 }`}
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
@@ -200,7 +283,7 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-6 py-2.5 bg-white text-base font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all"
+                className="px-6 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all"
               >
                 Cancel
               </button>
@@ -209,9 +292,10 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
                   type="button"
                   onClick={handleDelete}
                   disabled={isSubmitting}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-red-300 shadow-sm px-6 py-2.5 bg-red-50 text-base font-semibold text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:mr-auto sm:w-auto sm:text-sm transition-all"
+                  className="mr-auto p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                  title="Delete Epic"
                 >
-                  Delete Epic
+                  <Trash2 size={20} />
                 </button>
               )}
             </div>

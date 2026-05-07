@@ -25,6 +25,7 @@ export class EpicDAL {
       },
       {
         $addFields: {
+          featureCount: { $size: '$features' },
           totalStoryPoints: { $sum: '$userStories.storyPoints' },
           completedStoryPoints: {
             $sum: {

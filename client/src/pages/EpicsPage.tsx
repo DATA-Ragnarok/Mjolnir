@@ -1,29 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEpics } from '../hooks/useEpics';
 import EpicCard from '../components/EpicCard';
 import EpicModal from '../components/EpicModal';
 import CollapsibleSection from '../components/CollapsibleSection';
 import { Epic } from '../types';
 import { EpicWithProgress } from '../services/epicService';
+import { Coffee, Plus } from 'lucide-react';
 
 const EpicsPage: React.FC = () => {
-  const { epics, loading, error, refetch } = useEpics();
+  const navigate = useNavigate();
+  const { epicId } = useParams<{ epicId: string }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { epics, loading, error, refetch } = useEpics();
   const [selectedEpic, setSelectedEpic] = useState<Epic | undefined>(undefined);
 
+  useEffect(() => {
+    if (epicId === 'new') {
+      setSelectedEpic(undefined);
+      setIsModalOpen(true);
+    } else if (epicId && epics.length > 0) {
+      const epic = epics.find(e => e._id === epicId);
+      if (epic) {
+        setSelectedEpic(epic);
+        setIsModalOpen(true);
+      } else if (!loading) {
+        // Epic not found, maybe redirect to /epics
+        navigate('/epics', { replace: true });
+      }
+    } else if (!epicId) {
+      setIsModalOpen(false);
+      setSelectedEpic(undefined);
+    }
+  }, [epicId, epics, loading, navigate]);
+
   const handleCreateClick = () => {
-    setSelectedEpic(undefined);
-    setIsModalOpen(true);
+    navigate('/epics/new');
   };
 
   const handleEpicClick = (epic: EpicWithProgress) => {
-    setSelectedEpic(epic);
-    setIsModalOpen(true);
+    navigate(`/epics/${epic._id}`);
   };
 
   const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedEpic(undefined);
+    navigate('/epics');
   };
 
   const handleModalSubmit = () => {
@@ -68,8 +88,9 @@ const EpicsPage: React.FC = () => {
           />
         ))}
         {filteredEpics.length === 0 && (
-          <div className="col-span-full py-8 text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-            <p className="text-gray-400 text-sm italic">No epics in this status</p>
+          <div className="col-span-full py-10 flex flex-col items-center justify-center bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200 transition-colors hover:bg-gray-50">
+            <Coffee className="text-gray-300 mb-3" size={32} />
+            <p className="text-gray-400 text-sm font-medium">All clear in {title}</p>
           </div>
         )}
       </div>
@@ -77,24 +98,25 @@ const EpicsPage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Epics</h2>
+        <div>
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Epics</h2>
+          <p className="text-gray-500 mt-1">Manage high-level goals and project milestones.</p>
+        </div>
         <button
           onClick={handleCreateClick}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          className="inline-flex items-center px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
         >
-          <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
+          <Plus className="-ml-1 mr-2" size={18} />
           Create Epic
         </button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
+        {renderSection('Blocked', blockedEpics)}
         {renderSection('In Progress', inProgressEpics)}
         {renderSection('To Do', toDoEpics)}
-        {renderSection('Blocked', blockedEpics)}
         {renderSection('Done', doneEpics)}
       </div>
 
