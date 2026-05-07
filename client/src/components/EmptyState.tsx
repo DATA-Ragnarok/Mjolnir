@@ -1,13 +1,13 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 
-interface EmptyStateProps {
+type EmptyStateProps = {
   icon: React.ReactNode;
   title: string;
   description: string;
   actionText?: string;
   onAction?: () => void;
-}
+};
 
 const EmptyState: React.FC<EmptyStateProps> = ({
   icon,

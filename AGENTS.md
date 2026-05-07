@@ -49,7 +49,12 @@ Bootstrap: The first user registered in the database should be automatically set
 5. UI Requirements
 Universal Task Modals: Every task-like element (Epic, Feature, User Story) must be clickable. Clicking an element opens an interactive modal to view and edit its details. Creating new elements must also utilize this same modal structure.
 
-Tab 1 (Epics): Separated Card List - with drawers separated by status (order: Blocked, In Progress, To Do, Done). On Press - open modal with the epic data, in this modal the user will be able to edit the epic.
+Tab 1 (Epics): Separated Card List - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done). 
+- Card Details: Each card displays Title, Status (colored badge), Description (max 2 lines), Feature Count, Last Updated Date, and a Progress Bar (Story Points).
+- Empty States:
+    - Global: If no epics exist, show a centered `EmptyState` component with an icon, description, and "Create your first Epic" CTA.
+    - Sectional: If a specific status section is empty, show a subtle "All clear" placeholder with a coffee icon.
+- Interaction: Clicking a card opens the interactive `EpicModal` for viewing and editing. Creating a new epic also uses the `EpicModal`.
 
 Tab 2 (Features): Grouped by Epic.
 
