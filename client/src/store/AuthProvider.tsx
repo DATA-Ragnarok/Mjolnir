@@ -1,15 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, authService } from '../services/authService';
-import { jwtDecode } from 'jwt-decode';
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (idToken: string) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import React, { useState, useEffect, ReactNode } from 'react';
+import { authService, User } from '../services/authService';
+import { AuthContext } from './authContext';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -20,8 +11,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = authService.getToken();
       if (token) {
         try {
-          // You could either decode the token for immediate state or fetch user from backend
-          // Fetching from backend is safer as it verifies the token
           const userData = await authService.getCurrentUser();
           setUser(userData);
         } catch (error) {
@@ -58,12 +47,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

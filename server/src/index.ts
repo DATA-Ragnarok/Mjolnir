@@ -1,19 +1,22 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { config } from './config.js';
 import epicRoutes from './routes/epicRoutes.js';
 import featureRoutes from './routes/featureRoutes.js';
 import userStoryRoutes from './routes/userStoryRoutes.js';
 import sprintRoutes from './routes/sprintRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import { AppError } from './middleware/errorHandler.js';
 
-dotenv.config();
+export const app = express();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-app.use(cors());
+app.use(cors({
+  origin: config.frontendUrl,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 app.get('/health', (req, res) => {
@@ -27,19 +30,36 @@ app.use('/api/user-stories', userStoryRoutes);
 app.use('/api/sprints', sprintRoutes);
 app.use('/api/auth', authRoutes);
 
+// 404 handler
+app.use((req, res, next) => {
+  next(new AppError(404, `Not Found - ${req.originalUrl}`));
+});
+
+// Global Error Handler
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    message: err.message,
+    stack: process.env['NODE_ENV'] === 'production' ? null : err.stack,
+  });
+});
+
 const startServer = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/mjolnir';
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(config.mongoUri);
     console.log('Connected to MongoDB');
     
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
+    if (process.env['NODE_ENV'] !== 'test') {
+      app.listen(config.port, () => {
+        console.log(`Server is running on port ${config.port}`);
+      });
+    }
   } catch (error) {
     console.error('Failed to connect to MongoDB', error);
     process.exit(1);
   }
 };
 
-startServer();
+if (process.env['NODE_ENV'] !== 'test') {
+  startServer();
+}

@@ -1,11 +1,11 @@
 import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { useAuth } from '../store/AuthContext';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { useAuth } from '../hooks/useAuth';
 
 const GoogleLoginButton: React.FC = () => {
   const { login } = useAuth();
 
-  const handleSuccess = async (credentialResponse: any) => {
+  const handleSuccess = async (credentialResponse: CredentialResponse) => {
     if (credentialResponse.credential) {
       await login(credentialResponse.credential);
     }
