@@ -5,6 +5,49 @@ export class EpicDAL {
     return await Epic.find();
   }
 
+  static async findAllWithProgress() {
+    return await Epic.aggregate([
+      {
+        $lookup: {
+          from: 'features',
+          localField: '_id',
+          foreignField: 'epicId',
+          as: 'features',
+        },
+      },
+      {
+        $lookup: {
+          from: 'userstories',
+          localField: 'features._id',
+          foreignField: 'featureId',
+          as: 'userStories',
+        },
+      },
+      {
+        $addFields: {
+          totalStoryPoints: { $sum: '$userStories.storyPoints' },
+          completedStoryPoints: {
+            $sum: {
+              $map: {
+                input: '$userStories',
+                as: 'story',
+                in: {
+                  $cond: [{ $eq: ['$$story.status', 'Done'] }, '$$story.storyPoints', 0],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          features: 0,
+          userStories: 0,
+        },
+      },
+    ]);
+  }
+
   static async findById(id: string) {
     return await Epic.findById(id);
   }

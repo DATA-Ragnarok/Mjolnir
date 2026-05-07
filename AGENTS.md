@@ -47,7 +47,9 @@ Middleware: Every API route must check for isApproved === true.
 Bootstrap: The first user registered in the database should be automatically set to isApproved: true and designated as Admin.
 
 5. UI Requirements
-Tab 1 (Epics): List view with progress bars (calculated by summing child story points).
+Universal Task Modals: Every task-like element (Epic, Feature, User Story) must be clickable. Clicking an element opens an interactive modal to view and edit its details. Creating new elements must also utilize this same modal structure.
+
+Tab 1 (Epics): Separated Card List - with drawers separated by status (order: In Progress, To Do, Stuck, Done) every card will show the title, color dot that indicates it's status and the description. On Press - open modal that shows everything in the card, the epic's features with progress bars (calculated by summing child story points). in this modal the user will be able to edit the epic.
 
 Tab 2 (Features): Grouped by Epic.
 
