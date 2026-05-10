@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Layers } from 'lucide-react';
 import { Feature } from '../../types';
 import { STATUS_CONFIG } from '../../constants/status';
@@ -9,6 +10,8 @@ type FeatureListProps = {
 };
 
 const FeatureList: React.FC<FeatureListProps> = ({ features, isLoading }) => {
+  const navigate = useNavigate();
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -28,7 +31,8 @@ const FeatureList: React.FC<FeatureListProps> = ({ features, isLoading }) => {
           features.map((feature) => (
             <div 
               key={feature._id} 
-              className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-default"
+              onClick={() => navigate(`/features/${feature._id}?epicId=${feature.epicId}`)}
+              className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
             >
               <div className="flex items-center space-x-3 truncate">
                 <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[feature.status].color}`} />

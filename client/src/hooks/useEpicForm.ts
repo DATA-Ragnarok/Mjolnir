@@ -17,17 +17,20 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFeatures = useCallback(async (epicId: string, silent = false) => {
     if (!silent) {
       setIsLoadingFeatures(true);
+      setError(null);
     }
     
     try {
       const data = await featureService.getFeatures(epicId);
       setFeatures(data);
-    } catch (error) {
-      console.error('Failed to fetch features:', error);
+    } catch (err: any) {
+      console.error('Failed to fetch features:', err);
+      if (!silent) setError('Failed to load child features.');
     } finally {
       setIsLoadingFeatures(false);
     }
@@ -51,6 +54,7 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
     if (!title.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     try {
       if (epic) {
         await epicService.updateEpic(epic._id, { title, description, status });
@@ -59,23 +63,26 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
       }
       onSubmit();
       onClose();
-    } catch (error) {
-      console.error('Failed to save epic:', error);
+    } catch (err: any) {
+      console.error('Failed to save epic:', err);
+      setError(err.response?.data?.message || 'Failed to save epic. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!epic || !window.confirm('Are you sure you want to delete this epic?')) return;
+    if (!epic) return;
     
     setIsSubmitting(true);
+    setError(null);
     try {
       await epicService.deleteEpic(epic._id);
       onSubmit();
       onClose();
-    } catch (error) {
-      console.error('Failed to delete epic:', error);
+    } catch (err: any) {
+      console.error('Failed to delete epic:', err);
+      setError('Failed to delete epic. It might have child features linked.');
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +101,7 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
     isEditingTitle,
     setIsEditingTitle,
     isDirty,
+    error,
     handleSubmit,
     handleDelete
   };

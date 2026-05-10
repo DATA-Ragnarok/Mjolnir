@@ -64,8 +64,10 @@ Tab 2 (Features): Status Board with Epic Context - grouped by status into collap
 - Empty States:
     - Global: If no features exist, show `EmptyState` with a "Create your first Feature" CTA.
     - Sectional: "All clear" placeholder for empty status sections.
-- Interaction: Clicking a card opens the `FeatureModal` for viewing and editing. Creating a new feature requires selecting a parent Epic within the `FeatureModal`.
-- Navigation: Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
+- Interaction: Clicking a card opens the FeatureModal for viewing and editing. Creating a new feature requires selecting a parent Epic within the FeatureModal.
+- Navigation: 
+    - Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
+    - Go to Epic Link: In the FeatureModal, provide a "Go to Epic" link under the parent Epic selector. Clicking this link must auto-save any unsaved changes in the FeatureModal and navigate the user directly to the relevant Epic modal.
 
 Tab 3 (Sprints): Hybrid Backlog & Kanban View - A dual-pane layout for planning and execution.
 - Left Pane (Backlog - 1/3 width):

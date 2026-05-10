@@ -36,6 +36,7 @@ function App() {
         <Route path="/epics" element={<EpicsPage />} />
         <Route path="/epics/:epicId" element={<EpicsPage />} />
         <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/features/:featureId" element={<FeaturesPage />} />
         <Route path="/sprints" element={<SprintsPage />} />
       </Route>
 

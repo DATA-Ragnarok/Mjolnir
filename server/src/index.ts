@@ -36,10 +36,16 @@ app.use((req, res, next) => {
 });
 
 // Global Error Handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  const statusCode = err.statusCode || 500;
+app.use((err: Error & { statusCode?: number; name?: string }, req: Request, res: Response, next: NextFunction) => {
+  let statusCode = err.statusCode || 500;
+  let message = err.message;
+
+  if (err.name === 'ValidationError') {
+    statusCode = 400;
+  }
+
   res.status(statusCode).json({
-    message: err.message,
+    message,
     stack: process.env['NODE_ENV'] === 'production' ? null : err.stack,
   });
 });

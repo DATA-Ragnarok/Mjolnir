@@ -80,6 +80,29 @@ describe('Epic E2E Tests', () => {
     expect(response.body.title).toBe('Updated Epic Title');
   });
 
+  it('should return 401 for unauthorized access', async () => {
+    const response = await request(app).get('/api/epics');
+    expect(response.status).toBe(401);
+  });
+
+  it('should return 400 for creating an epic with missing title', async () => {
+    const response = await request(app)
+      .post('/api/epics')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ description: 'Epic without title' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('should return 404 for non-existent epic', async () => {
+    const fakeId = '507f1f77bcf86cd799439011';
+    const response = await request(app)
+      .get(`/api/epics/${fakeId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+  });
+
   it('should delete an epic', async () => {
     const createRes = await request(app)
       .post('/api/epics')

@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
-import { Epic, EpicWithProgress } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { Feature, FeatureWithProgress } from '../types';
 import { Trash2, Clock } from 'lucide-react';
-import { useEpicForm } from '../hooks/useEpicForm';
+import { useFeatureForm } from '../hooks/useFeatureForm';
 import { STATUS_CONFIG } from '../constants/status';
 
 // Sub-components
-import EpicHeader from './EpicModal/EpicHeader';
-import EpicStats from './EpicModal/EpicStats';
+import FeatureHeader from './FeatureModal/FeatureHeader';
+import FeatureStats from './FeatureModal/FeatureStats';
 import StatusSelect from './EpicModal/StatusSelect';
-import FeatureList from './EpicModal/FeatureList';
+import StoryList from './FeatureModal/StoryList';
+import EpicSelect from './FeatureModal/EpicSelect';
 import ConfirmModal from './ConfirmModal';
 
-type EpicModalProps = {
+type FeatureModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: () => void;
-  epic?: Epic;
+  feature?: Feature;
+  initialEpicId?: string;
 };
 
-const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }) => {
+const FeatureModal: React.FC<FeatureModalProps> = ({ isOpen, onClose, onSubmit, feature, initialEpicId }) => {
+  const navigate = useNavigate();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const {
     title,
@@ -27,16 +31,26 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
     setDescription,
     status,
     setStatus,
-    features,
+    epicId,
+    setEpicId,
+    userStories,
     isSubmitting,
-    isLoadingFeatures,
+    isLoadingStories,
     isEditingTitle,
     setIsEditingTitle,
     isDirty,
     error,
     handleSubmit,
     handleDelete
-  } = useEpicForm({ epic, onClose, onSubmit });
+  } = useFeatureForm({ feature, onClose, onSubmit, initialEpicId });
+
+  const handleGoToEpic = async () => {
+    if (isDirty) {
+      const success = await handleSubmit(undefined, false);
+      if (!success) return;
+    }
+    navigate(`/epics/${epicId}`);
+  };
 
   if (!isOpen) return null;
 
@@ -54,14 +68,14 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
             
             <form onSubmit={handleSubmit}>
               <div className="p-8">
-                <EpicHeader 
+                <FeatureHeader 
                   title={title}
                   isEditingTitle={isEditingTitle}
                   setTitle={setTitle}
                   setIsEditingTitle={setIsEditingTitle}
                   onClose={onClose}
-                  epic={epic}
-                  featureCount={features.length}
+                  feature={feature}
+                  storyCount={userStories.length}
                 />
 
                 {error && (
@@ -86,18 +100,19 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
                         rows={12}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="What is this epic trying to achieve? Define the high-level goals and acceptance criteria..."
+                        placeholder="What is this feature trying to achieve? Define the scope and high-level requirements..."
                         className="w-full border-gray-200 rounded-xl shadow-sm py-4 px-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 leading-relaxed transition-all resize-none bg-gray-50/30"
                       />
                     </div>
 
-                    <EpicStats epic={epic as EpicWithProgress} featureCount={features.length} />
+                    <FeatureStats feature={feature as FeatureWithProgress} storyCount={userStories.length} />
                   </div>
 
-                  {/* Right: Metadata and Features */}
+                  {/* Right: Metadata and Stories */}
                   <div className="space-y-8">
                     <StatusSelect status={status} setStatus={setStatus} />
-                    <FeatureList features={features} isLoading={isLoadingFeatures} />
+                    <EpicSelect selectedEpicId={epicId} onChange={setEpicId} onGoToEpic={handleGoToEpic} />
+                    <StoryList stories={userStories} isLoading={isLoadingStories} />
                   </div>
                 </div>
               </div>
@@ -106,9 +121,9 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
               <div className="bg-gray-50 px-8 py-5 flex flex-row-reverse items-center gap-3 border-t border-gray-100">
                 <button
                   type="submit"
-                  disabled={isSubmitting || (!isDirty && !!epic)}
+                  disabled={isSubmitting || (!isDirty && !!feature) || !epicId}
                   className={`flex-none px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-all active:scale-95 ${
-                    isSubmitting || (!isDirty && !!epic) ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700'
+                    isSubmitting || (!isDirty && !!feature) || !epicId ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700'
                   }`}
                 >
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
@@ -120,13 +135,13 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
                 >
                   Cancel
                 </button>
-                {epic && (
+                {feature && (
                   <button
                     type="button"
                     onClick={() => setIsDeleteConfirmOpen(true)}
                     disabled={isSubmitting}
                     className="mr-auto p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                    title="Delete Epic"
+                    title="Delete Feature"
                   >
                     <Trash2 size={20} />
                   </button>
@@ -141,12 +156,12 @@ const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Epic"
-        message={`Are you sure you want to delete "${title}"? This action cannot be undone and will fail if there are child features linked.`}
-        confirmText="Delete Epic"
+        title="Delete Feature"
+        message={`Are you sure you want to delete "${title}"? This action cannot be undone and will fail if there are user stories linked.`}
+        confirmText="Delete Feature"
       />
     </>
   );
 };
 
-export default EpicModal;
+export default FeatureModal;
