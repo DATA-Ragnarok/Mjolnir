@@ -36,9 +36,11 @@ export const clearTestDB = async () => {
     throw new Error(`SAFETY TRIGGERED: Refusing to clear database "${dbName}" because it does not contain "test" in its name.`);
   }
 
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    await collections[key].deleteMany({});
+  const collections = await mongoose.connection.db?.listCollections().toArray();
+  if (collections) {
+    for (const collection of collections) {
+      await mongoose.connection.db?.collection(collection.name).deleteMany({});
+    }
   }
 };
 

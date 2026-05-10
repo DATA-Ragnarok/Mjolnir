@@ -9,7 +9,9 @@ type EpicStatsProps = {
 const EpicStats: React.FC<EpicStatsProps> = ({ epic, featureCount }) => {
   if (!epic) return null;
 
-  const progressPercent = Math.round((epic.completedStoryPoints / epic.totalStoryPoints) * 100) || 0;
+  const progressPercent = epic.totalStoryPoints > 0 
+    ? Math.round((epic.completedStoryPoints / epic.totalStoryPoints) * 100) 
+    : 0;
 
   return (
     <div className="grid grid-cols-3 gap-3">

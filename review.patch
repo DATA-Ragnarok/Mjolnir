@@ -1,0 +1,2825 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 3523730..2eba97c 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -47,11 +47,49 @@ Middleware: Every API route must check for isApproved === true.
+ Bootstrap: The first user registered in the database should be automatically set to isApproved: true and designated as Admin.
+ 
+ 5. UI Requirements
+-Tab 1 (Epics): List view with progress bars (calculated by summing child story points).
+-
+-Tab 2 (Features): Grouped by Epic.
+-
+-Tab 3 (Sprints): Two-pane layout. Left: Backlog (Stories with sprintId: null). Right: Kanban Board (Stories for the active sprintId).
++Universal Task Modals: Every task-like element (Epic, Feature, User Story) must be clickable. Clicking an element opens an interactive modal to view and edit its details. Creating new elements must also utilize this same modal structure.
++
++Tab 1 (Epics): Separated Card List - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done). 
++- Card Details: Each card displays Title, Status (colored badge), Description (max 2 lines), Feature Count, Last Updated Date, and a Progress Bar (Story Points).
++- Empty States:
++    - Global: If no epics exist, show a centered `EmptyState` component with an icon, description, and "Create your first Epic" CTA.
++    - Sectional: If a specific status section is empty, show a subtle "All clear" placeholder with a coffee icon.
++- Interaction: Clicking a card opens the interactive `EpicModal` for viewing and editing. Creating a new epic also uses the `EpicModal`.
++
++Tab 2 (Features): Status Board with Epic Context - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done).
++- Filtering & Context:
++    - Global Epic Filter: A dropdown or pill-based selector to filter features by their parent Epic.
++    - Epic Context Bar: When a single Epic is filtered, display a slim header showing the parent Epic's status and overall progress (story points).
++- Card Details: Each card displays Title, Status (colored badge), Description (max 2 lines), User Story Count, Parent Epic Name (subtle tag, hidden if filtered by Epic), Last Updated Date, and a Progress Bar (Story Points).
++- Empty States:
++    - Global: If no features exist, show `EmptyState` with a "Create your first Feature" CTA.
++    - Sectional: "All clear" placeholder for empty status sections.
++- Interaction: Clicking a card opens the FeatureModal for viewing and editing. Creating a new feature requires selecting a parent Epic within the FeatureModal.
++- Navigation: 
++    - Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
++    - Go to Epic Link: In the FeatureModal, provide a "Go to Epic" link under the parent Epic selector. Clicking this link must auto-save any unsaved changes in the FeatureModal and navigate the user directly to the relevant Epic modal.
++
++Tab 3 (Sprints): Hybrid Backlog & Kanban View - A dual-pane layout for planning and execution.
++- Left Pane (Backlog - 1/3 width):
++    - Searchable list of User Stories where `sprintId` is null.
++    - Displays story title, points, and parent hierarchy (Epic > Feature).
++    - Drag stories from here into the Kanban board to assign them to the current sprint.
++- Right Pane (Kanban Board - 2/3 width):
++    - Header & Actions:
++        - Sprint Selector: Dropdown to switch between the Active Sprint and Planned Sprints.
++        - Create Sprint Button: A "+ Create Sprint" button next to the selector that opens the `SprintModal`.
++    - Sprint Info: Displays Sprint Name, Date Range, and a Progress Bar (Story Points completed vs. total).
++    - Columns: 5 status-based columns (To Do, In Progress, Blocked, Waiting for MR, Done).
++- Story Card Details:
++    - Metadata: Title, Story Points, Feature Name, and Assigned User (avatar/initials).
++    - WIP Glow: 
++        - Red Border/Glow: If a user has >1 story in "In Progress".
++        - Yellow Border/Glow: If a user has >1 story in "Waiting for MR".
++- Interaction & DND:
++    - Use `dnd-kit` for all movements (Backlog to Kanban, Column to Column).
++    - Clicking a card opens the `UserStoryModal` for editing and assignment (Feature, Sprint, User).
++    - Dragging a story to the "Done" column triggers the "Status Inheritance" logic.
++- Navigation: Direct link from the Features page (clicking "X User Stories") should open the Backlog and highlight the relevant stories.
+ 
+ Drag & Drop: Use dnd-kit for vertical and horizontal sorting.
+ 
+diff --git a/client/package-lock.json b/client/package-lock.json
+index 2ef3e8b..bed18c0 100644
+--- a/client/package-lock.json
++++ b/client/package-lock.json
+@@ -17,7 +17,8 @@
+         "jwt-decode": "^4.0.0",
+         "lucide-react": "^1.14.0",
+         "react": "^18.3.1",
+-        "react-dom": "^18.3.1"
++        "react-dom": "^18.3.1",
++        "react-router-dom": "^7.15.0"
+       },
+       "devDependencies": {
+         "@eslint/js": "^9.13.0",
+@@ -2122,6 +2123,18 @@
+       "integrity": "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==",
+       "dev": true
+     },
++    "node_modules/cookie": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz",
++      "integrity": "sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==",
++      "engines": {
++        "node": ">=18"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/express"
++      }
++    },
+     "node_modules/cross-spawn": {
+       "version": "7.0.6",
+       "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
+@@ -3579,6 +3592,42 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/react-router": {
++      "version": "7.15.0",
++      "resolved": "https://registry.npmjs.org/react-router/-/react-router-7.15.0.tgz",
++      "integrity": "sha512-HW9vYwuM8f4yx66Izy8xfrzCM+SBJluoZcCbww9A1TySax11S5Vgw6fi3ZjMONw9J4gQwngL7PzkyIpJJpJ7RQ==",
++      "dependencies": {
++        "cookie": "^1.0.1",
++        "set-cookie-parser": "^2.6.0"
++      },
++      "engines": {
++        "node": ">=20.0.0"
++      },
++      "peerDependencies": {
++        "react": ">=18",
++        "react-dom": ">=18"
++      },
++      "peerDependenciesMeta": {
++        "react-dom": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/react-router-dom": {
++      "version": "7.15.0",
++      "resolved": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.15.0.tgz",
++      "integrity": "sha512-VcrVg64Fo8nwBvDscajG8gRTLIuTC6N50nb22l2HOOV4PTOHgoGp8mUjy9wLiHYoYTSYI36tUnXZgasSRFZorQ==",
++      "dependencies": {
++        "react-router": "7.15.0"
++      },
++      "engines": {
++        "node": ">=20.0.0"
++      },
++      "peerDependencies": {
++        "react": ">=18",
++        "react-dom": ">=18"
++      }
++    },
+     "node_modules/read-cache": {
+       "version": "1.0.0",
+       "resolved": "https://registry.npmjs.org/read-cache/-/read-cache-1.0.0.tgz",
+@@ -3736,6 +3785,11 @@
+         "semver": "bin/semver.js"
+       }
+     },
++    "node_modules/set-cookie-parser": {
++      "version": "2.7.2",
++      "resolved": "https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-2.7.2.tgz",
++      "integrity": "sha512-oeM1lpU/UvhTxw+g3cIfxXHyJRc/uidd3yK1P242gzHds0udQBYzs3y8j4gCCW+ZJ7ad0yctld8RYO+bdurlvw=="
++    },
+     "node_modules/shebang-command": {
+       "version": "2.0.0",
+       "resolved": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
+diff --git a/client/package.json b/client/package.json
+index e3a1474..d12fc68 100644
+--- a/client/package.json
++++ b/client/package.json
+@@ -19,7 +19,8 @@
+     "jwt-decode": "^4.0.0",
+     "lucide-react": "^1.14.0",
+     "react": "^18.3.1",
+-    "react-dom": "^18.3.1"
++    "react-dom": "^18.3.1",
++    "react-router-dom": "^7.15.0"
+   },
+   "devDependencies": {
+     "@eslint/js": "^9.13.0",
+diff --git a/client/src/App.tsx b/client/src/App.tsx
+index 17fe4f1..e6e9b23 100644
+--- a/client/src/App.tsx
++++ b/client/src/App.tsx
+@@ -1,34 +1,49 @@
+-import { useState } from 'react'
++import { Routes, Route, Navigate } from 'react-router-dom'
+ import { useAuth } from './hooks/useAuth'
+ import LoginPage from './pages/LoginPage'
+ import EpicsPage from './pages/EpicsPage'
+ import FeaturesPage from './pages/FeaturesPage'
+ import SprintsPage from './pages/SprintsPage'
+ import DashboardLayout from './layouts/DashboardLayout'
++import ProtectedRoute from './components/ProtectedRoute'
+ 
+ function App() {
+-  const { user, loading } = useAuth()
+-  const [activeTab, setActiveTab] = useState('Epics')
++  const { user, loading } = useAuth();
+ 
+   if (loading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center">
+         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+       </div>
+-    )
+-  }
+-
+-  if (!user) {
+-    return <LoginPage />
++    );
+   }
+ 
+   return (
+-    <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+-      {activeTab === 'Epics' && <EpicsPage />}
+-      {activeTab === 'Features' && <FeaturesPage />}
+-      {activeTab === 'Sprints' && <SprintsPage />}
+-    </DashboardLayout>
+-  )
++    <Routes>
++      <Route 
++        path="/login" 
++        element={user ? <Navigate to="/epics" replace /> : <LoginPage />} 
++      />
++      
++      {/* Protected Dashboard Routes */}
++      <Route
++        element={
++          <ProtectedRoute>
++            <DashboardLayout />
++          </ProtectedRoute>
++        }
++      >
++        <Route path="/epics" element={<EpicsPage />} />
++        <Route path="/epics/:epicId" element={<EpicsPage />} />
++        <Route path="/features" element={<FeaturesPage />} />
++        <Route path="/features/:featureId" element={<FeaturesPage />} />
++        <Route path="/sprints" element={<SprintsPage />} />
++      </Route>
++
++      <Route path="/" element={<Navigate to="/epics" replace />} />
++      <Route path="*" element={<Navigate to="/epics" replace />} />
++    </Routes>
++  );
+ }
+ 
+ export default App
+diff --git a/client/src/components/CollapsibleSection.tsx b/client/src/components/CollapsibleSection.tsx
+new file mode 100644
+index 0000000..8f01414
+--- /dev/null
++++ b/client/src/components/CollapsibleSection.tsx
+@@ -0,0 +1,50 @@
++import React, { useState } from 'react';
++
++type CollapsibleSectionProps = {
++  title: string;
++  count: number;
++  children: React.ReactNode;
++  defaultOpen?: boolean;
++};
++
++const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
++  title,
++  count,
++  children,
++  defaultOpen = true,
++}) => {
++  const [isOpen, setIsOpen] = useState(defaultOpen);
++
++  return (
++    <div className="mb-6">
++      <button
++        onClick={() => setIsOpen(!isOpen)}
++        className="w-full flex items-center justify-between py-2 border-b border-gray-200 hover:bg-gray-50 transition-colors group"
++      >
++        <div className="flex items-center space-x-3">
++          <svg
++            className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
++              isOpen ? 'rotate-90' : ''
++            }`}
++            fill="none"
++            viewBox="0 0 24 24"
++            stroke="currentColor"
++          >
++            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
++          </svg>
++          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-600">
++            {title} <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs">{count}</span>
++          </h3>
++        </div>
++      </button>
++
++      {isOpen && (
++        <div className="mt-6">
++          {children}
++        </div>
++      )}
++    </div>
++  );
++};
++
++export default CollapsibleSection;
+diff --git a/client/src/components/EmptyState.tsx b/client/src/components/EmptyState.tsx
+new file mode 100644
+index 0000000..ecb1c62
+--- /dev/null
++++ b/client/src/components/EmptyState.tsx
+@@ -0,0 +1,41 @@
++import React from 'react';
++import { Plus } from 'lucide-react';
++
++type EmptyStateProps = {
++  icon: React.ReactNode;
++  title: string;
++  description: string;
++  actionText?: string;
++  onAction?: () => void;
++};
++
++const EmptyState: React.FC<EmptyStateProps> = ({
++  icon,
++  title,
++  description,
++  actionText,
++  onAction,
++}) => {
++  return (
++    <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-2xl border-2 border-dashed border-gray-200 shadow-sm transition-all hover:border-indigo-200">
++      <div className="p-4 bg-indigo-50 rounded-full text-indigo-600 mb-6">
++        {icon}
++      </div>
++      <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
++      <p className="text-gray-500 max-w-sm mb-8 leading-relaxed">
++        {description}
++      </p>
++      {actionText && onAction && (
++        <button
++          onClick={onAction}
++          className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-105 active:scale-95"
++        >
++          <Plus className="-ml-1 mr-2" size={20} />
++          {actionText}
++        </button>
++      )}
++    </div>
++  );
++};
++
++export default EmptyState;
+diff --git a/client/src/components/EpicCard.tsx b/client/src/components/EpicCard.tsx
+new file mode 100644
+index 0000000..4f93b09
+--- /dev/null
++++ b/client/src/components/EpicCard.tsx
+@@ -0,0 +1,68 @@
++import React from 'react';
++import { useNavigate } from 'react-router-dom';
++import { EpicWithProgress } from '../types';
++import ProgressBar from './ProgressBar';
++import { Layers, Calendar } from 'lucide-react';
++import { STATUS_CONFIG } from '../constants/status';
++
++type EpicCardProps = {
++  epic: EpicWithProgress;
++  onClick: (epic: EpicWithProgress) => void;
++};
++
++const EpicCard: React.FC<EpicCardProps> = ({ epic, onClick }) => {
++  const navigate = useNavigate();
++
++  const formatDate = (dateString: string) => {
++    const date = new Date(dateString);
++    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
++  };
++
++  const statusStyle = STATUS_CONFIG[epic.status];
++
++  return (
++    <div
++      onClick={() => onClick(epic)}
++      className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-300 cursor-pointer flex flex-col h-full"
++    >
++      <div className="flex justify-between items-start mb-3">
++        <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate pr-2">
++          {epic.title}
++        </h3>
++        <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border ${statusStyle.cardBg} ${statusStyle.text} ${statusStyle.border}`}>
++          {epic.status}
++        </span>
++      </div>
++      
++      <p className="text-gray-500 text-sm mb-6 line-clamp-2 flex-grow leading-relaxed">
++        {epic.description || 'No description provided.'}
++      </p>
++
++      <div className="flex items-center space-x-4 mb-6 text-gray-400">
++        <div 
++          onClick={(e) => {
++            e.stopPropagation();
++            navigate(`/features?epicId=${epic._id}`);
++          }}
++          className="flex items-center space-x-1.5 hover:text-indigo-600 transition-colors"
++        >
++          <Layers size={14} />
++          <span className="text-xs font-medium">{epic.featureCount} Features</span>
++        </div>
++        <div className="flex items-center space-x-1.5">
++          <Calendar size={14} />
++          <span className="text-xs font-medium">{formatDate(epic.updatedAt)}</span>
++        </div>
++      </div>
++
++      <div className="mt-auto pt-4 border-t border-gray-50">
++        <ProgressBar
++          current={epic.completedStoryPoints}
++          total={epic.totalStoryPoints}
++        />
++      </div>
++    </div>
++  );
++};
++
++export default EpicCard;
+diff --git a/client/src/components/EpicModal.tsx b/client/src/components/EpicModal.tsx
+new file mode 100644
+index 0000000..f4f4e81
+--- /dev/null
++++ b/client/src/components/EpicModal.tsx
+@@ -0,0 +1,129 @@
++import React from 'react';
++import { Epic, EpicWithProgress } from '../types';
++import { Trash2, Clock } from 'lucide-react';
++import { useEpicForm } from '../hooks/useEpicForm';
++import { STATUS_CONFIG } from '../constants/status';
++
++// Sub-components
++import EpicHeader from './EpicModal/EpicHeader';
++import EpicStats from './EpicModal/EpicStats';
++import StatusSelect from './EpicModal/StatusSelect';
++import FeatureList from './EpicModal/FeatureList';
++
++type EpicModalProps = {
++  isOpen: boolean;
++  onClose: () => void;
++  onSubmit: () => void;
++  epic?: Epic;
++};
++
++const EpicModal: React.FC<EpicModalProps> = ({ isOpen, onClose, onSubmit, epic }) => {
++  const {
++    title,
++    setTitle,
++    description,
++    setDescription,
++    status,
++    setStatus,
++    features,
++    isSubmitting,
++    isLoadingFeatures,
++    isEditingTitle,
++    setIsEditingTitle,
++    isDirty,
++    handleSubmit,
++    handleDelete
++  } = useEpicForm({ epic, onClose, onSubmit });
++
++  if (!isOpen) return null;
++
++  const currentStatus = STATUS_CONFIG[status];
++
++  return (
++    <div className="fixed inset-0 z-50 overflow-y-auto">
++      <div className="flex items-center justify-center min-h-screen p-4">
++        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
++
++        <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-6xl transform transition-all">
++          {/* Progress Ribbon */}
++          <div className={`h-1.5 w-full ${currentStatus.color} transition-colors duration-500`}></div>
++          
++          <form onSubmit={handleSubmit}>
++            <div className="p-8">
++              <EpicHeader 
++                title={title}
++                isEditingTitle={isEditingTitle}
++                setTitle={setTitle}
++                setIsEditingTitle={setIsEditingTitle}
++                onClose={onClose}
++                epic={epic}
++                featureCount={features.length}
++              />
++
++              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
++                {/* Left: Description and Main content */}
++                <div className="lg:col-span-2 space-y-8">
++                  <div>
++                    <div className="flex items-center space-x-2 mb-3 text-gray-500">
++                      <Clock size={16} />
++                      <label htmlFor="description" className="text-xs font-bold uppercase tracking-widest">Description</label>
++                    </div>
++                    <textarea
++                      id="description"
++                      rows={12}
++                      value={description}
++                      onChange={(e) => setDescription(e.target.value)}
++                      placeholder="What is this epic trying to achieve? Define the high-level goals and acceptance criteria..."
++                      className="w-full border-gray-200 rounded-xl shadow-sm py-4 px-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 leading-relaxed transition-all resize-none bg-gray-50/30"
++                    />
++                  </div>
++
++                  <EpicStats epic={epic as EpicWithProgress} featureCount={features.length} />
++                </div>
++
++                {/* Right: Metadata and Features */}
++                <div className="space-y-8">
++                  <StatusSelect status={status} setStatus={setStatus} />
++                  <FeatureList features={features} isLoading={isLoadingFeatures} />
++                </div>
++              </div>
++            </div>
++
++            {/* Footer */}
++            <div className="bg-gray-50 px-8 py-5 flex flex-row-reverse items-center gap-3 border-t border-gray-100">
++              <button
++                type="submit"
++                disabled={isSubmitting || (!isDirty && !!epic)}
++                className={`flex-none px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-all active:scale-95 ${
++                  isSubmitting || (!isDirty && !!epic) ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700'
++                }`}
++              >
++                {isSubmitting ? 'Saving...' : 'Save Changes'}
++              </button>
++              <button
++                type="button"
++                onClick={onClose}
++                className="px-6 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all"
++              >
++                Cancel
++              </button>
++              {epic && (
++                <button
++                  type="button"
++                  onClick={handleDelete}
++                  disabled={isSubmitting}
++                  className="mr-auto p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
++                  title="Delete Epic"
++                >
++                  <Trash2 size={20} />
++                </button>
++              )}
++            </div>
++          </form>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++export default EpicModal;
+diff --git a/client/src/components/EpicModal/EpicHeader.tsx b/client/src/components/EpicModal/EpicHeader.tsx
+new file mode 100644
+index 0000000..45f4364
+--- /dev/null
++++ b/client/src/components/EpicModal/EpicHeader.tsx
+@@ -0,0 +1,65 @@
++import React from 'react';
++import { Calendar, Layers, X } from 'lucide-react';
++import { Epic } from '../../types';
++
++type EpicHeaderProps = {
++  title: string;
++  isEditingTitle: boolean;
++  setTitle: (title: string) => void;
++  setIsEditingTitle: (isEditing: boolean) => void;
++  onClose: () => void;
++  epic?: Epic;
++  featureCount: number;
++};
++
++const EpicHeader: React.FC<EpicHeaderProps> = ({
++  title,
++  isEditingTitle,
++  setTitle,
++  setIsEditingTitle,
++  onClose,
++  epic,
++  featureCount
++}) => {
++  return (
++    <div className="flex justify-between items-start mb-8">
++      <div className="flex-grow mr-4">
++        {isEditingTitle ? (
++          <input
++            type="text"
++            autoFocus
++            value={title}
++            onChange={(e) => setTitle(e.target.value)}
++            onBlur={() => setIsEditingTitle(false)}
++            onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
++            className="text-4xl font-extrabold text-gray-900 border-b-2 border-indigo-500 focus:outline-none w-full bg-transparent py-1"
++          />
++        ) : (
++          <h2 
++            onClick={() => setIsEditingTitle(true)}
++            className="text-4xl font-extrabold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors py-1 -ml-1 rounded hover:bg-gray-50 px-2 inline-block"
++          >
++            {title || 'New Epic'}
++          </h2>
++        )}
++        {epic && (
++          <div className="flex items-center mt-2 text-gray-400 space-x-4">
++            <div className="flex items-center space-x-1">
++              <Calendar size={14} />
++              <span className="text-xs">Updated {new Date(epic.updatedAt).toLocaleDateString()}</span>
++            </div>
++            <div className="flex items-center space-x-1">
++              <Layers size={14} />
++              <span className="text-xs">{featureCount} Features linked</span>
++            </div>
++          </div>
++        )}
++      </div>
++      <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
++        <X size={24} />
++      </button>
++    </div>
++  );
++};
++
++export default EpicHeader;
+diff --git a/client/src/components/EpicModal/EpicStats.tsx b/client/src/components/EpicModal/EpicStats.tsx
+new file mode 100644
+index 0000000..04149b6
+--- /dev/null
++++ b/client/src/components/EpicModal/EpicStats.tsx
+@@ -0,0 +1,34 @@
++import React from 'react';
++import { EpicWithProgress } from '../../types';
++
++type EpicStatsProps = {
++  epic?: EpicWithProgress;
++  featureCount: number;
++};
++
++const EpicStats: React.FC<EpicStatsProps> = ({ epic, featureCount }) => {
++  if (!epic) return null;
++
++  const progressPercent = Math.round((epic.completedStoryPoints / epic.totalStoryPoints) * 100) || 0;
++
++  return (
++    <div className="grid grid-cols-3 gap-3">
++      <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
++        <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider mb-0.5">Progress</p>
++        <p className="text-lg font-black text-indigo-700">{progressPercent}%</p>
++      </div>
++      <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
++        <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-0.5">Points</p>
++        <p className="text-lg font-black text-emerald-700">
++          {epic.completedStoryPoints} <span className="text-xs font-medium text-emerald-500">/ {epic.totalStoryPoints}</span>
++        </p>
++      </div>
++      <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
++        <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-0.5">Features</p>
++        <p className="text-lg font-black text-amber-700">{featureCount}</p>
++      </div>
++    </div>
++  );
++};
++
++export default EpicStats;
+diff --git a/client/src/components/EpicModal/FeatureList.tsx b/client/src/components/EpicModal/FeatureList.tsx
+new file mode 100644
+index 0000000..5b18e58
+--- /dev/null
++++ b/client/src/components/EpicModal/FeatureList.tsx
+@@ -0,0 +1,58 @@
++import React from 'react';
++import { useNavigate } from 'react-router-dom';
++import { ChevronRight, Layers } from 'lucide-react';
++import { Feature } from '../../types';
++import { STATUS_CONFIG } from '../../constants/status';
++
++type FeatureListProps = {
++  features: Feature[];
++  isLoading: boolean;
++};
++
++const FeatureList: React.FC<FeatureListProps> = ({ features, isLoading }) => {
++  const navigate = useNavigate();
++
++  return (
++    <div>
++      <div className="flex items-center justify-between mb-4">
++        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Child Features</label>
++        <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
++          {features.length}
++        </span>
++      </div>
++      
++      <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
++        {isLoading ? (
++          <div className="flex items-center justify-center py-12 text-gray-400">
++            <div className="animate-spin mr-2 h-4 w-4 border-2 border-gray-300 border-t-indigo-500 rounded-full" />
++            <span className="text-xs font-medium">Syncing features...</span>
++          </div>
++        ) : features.length > 0 ? (
++          features.map((feature) => (
++            <div 
++              key={feature._id} 
++              onClick={() => navigate(`/features/${feature._id}?epicId=${feature.epicId}`)}
++              className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
++            >
++              <div className="flex items-center space-x-3 truncate">
++                <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[feature.status].color}`} />
++                <span className="text-sm font-semibold text-gray-700 truncate">{feature.title}</span>
++              </div>
++              <ChevronRight 
++                size={16} 
++                className="text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" 
++              />
++            </div>
++          ))
++        ) : (
++          <div className="text-center py-16 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
++            <Layers className="mx-auto text-gray-200 mb-2" size={32} />
++            <p className="text-xs text-gray-400 italic">No features linked yet.</p>
++          </div>
++        )}
++      </div>
++    </div>
++  );
++};
++
++export default FeatureList;
+diff --git a/client/src/components/EpicModal/StatusSelect.tsx b/client/src/components/EpicModal/StatusSelect.tsx
+new file mode 100644
+index 0000000..84a9008
+--- /dev/null
++++ b/client/src/components/EpicModal/StatusSelect.tsx
+@@ -0,0 +1,39 @@
++import React from 'react';
++import { Status } from '../../types';
++import { STATUS_CONFIG } from '../../constants/status';
++
++type StatusSelectProps = {
++  status: Status;
++  setStatus: (status: Status) => void;
++};
++
++const StatusSelect: React.FC<StatusSelectProps> = ({ status, setStatus }) => {
++  const currentStatus = STATUS_CONFIG[status];
++
++  return (
++    <div>
++      <label htmlFor="status" className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
++        Status
++      </label>
++      <div className="relative">
++        <select
++          id="status"
++          value={status}
++          onChange={(e) => setStatus(e.target.value as Status)}
++          className={`w-full appearance-none border-2 rounded-xl py-3 pl-12 pr-10 focus:outline-none transition-all duration-300 font-bold ${currentStatus.border} ${currentStatus.light} ${currentStatus.text}`}
++        >
++          {Object.keys(STATUS_CONFIG).map((s) => (
++            <option key={s} value={s}>
++              {s}
++            </option>
++          ))}
++        </select>
++        <div className="absolute left-4 top-1/2 -translate-y-1/2">
++          {React.createElement(currentStatus.icon, { size: 18, className: currentStatus.text })}
++        </div>
++      </div>
++    </div>
++  );
++};
++
++export default StatusSelect;
+diff --git a/client/src/components/FeatureCard.tsx b/client/src/components/FeatureCard.tsx
+new file mode 100644
+index 0000000..062c6f2
+--- /dev/null
++++ b/client/src/components/FeatureCard.tsx
+@@ -0,0 +1,67 @@
++import React from 'react';
++import { FeatureWithProgress } from '../types';
++import ProgressBar from './ProgressBar';
++import { ClipboardList, Calendar, Tag } from 'lucide-react';
++import { STATUS_CONFIG } from '../constants/status';
++
++type FeatureCardProps = {
++  feature: FeatureWithProgress;
++  onClick: (feature: FeatureWithProgress) => void;
++  hideEpicTag?: boolean;
++};
++
++const FeatureCard: React.FC<FeatureCardProps> = ({ feature, onClick, hideEpicTag }) => {
++  const formatDate = (dateString: string) => {
++    const date = new Date(dateString);
++    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
++  };
++
++  const statusStyle = STATUS_CONFIG[feature.status];
++
++  return (
++    <div
++      onClick={() => onClick(feature)}
++      className="group bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-300 cursor-pointer flex flex-col h-full"
++    >
++      <div className="flex justify-between items-start mb-2">
++        <h3 className="font-bold text-base text-gray-900 group-hover:text-indigo-600 transition-colors truncate pr-2">
++          {feature.title}
++        </h3>
++        <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-bold border ${statusStyle.cardBg} ${statusStyle.text} ${statusStyle.border}`}>
++          {feature.status}
++        </span>
++      </div>
++      
++      {!hideEpicTag && (
++        <div className="flex items-center space-x-1 mb-3">
++          <Tag size={10} className="text-indigo-400" />
++          <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight">{feature.epicTitle}</span>
++        </div>
++      )}
++
++      <p className="text-gray-500 text-xs mb-4 line-clamp-2 flex-grow leading-relaxed">
++        {feature.description || 'No description provided.'}
++      </p>
++
++      <div className="flex items-center space-x-4 mb-4 text-gray-400">
++        <div className="flex items-center space-x-1.5">
++          <ClipboardList size={12} />
++          <span className="text-[10px] font-semibold">{feature.userStoryCount} Stories</span>
++        </div>
++        <div className="flex items-center space-x-1.5">
++          <Calendar size={12} />
++          <span className="text-[10px] font-semibold">{formatDate(feature.updatedAt)}</span>
++        </div>
++      </div>
++
++      <div className="mt-auto pt-3 border-t border-gray-50">
++        <ProgressBar
++          current={feature.completedStoryPoints}
++          total={feature.totalStoryPoints}
++        />
++      </div>
++    </div>
++  );
++};
++
++export default FeatureCard;
+diff --git a/client/src/components/FeatureModal.tsx b/client/src/components/FeatureModal.tsx
+new file mode 100644
+index 0000000..fc884fd
+--- /dev/null
++++ b/client/src/components/FeatureModal.tsx
+@@ -0,0 +1,144 @@
++import React from 'react';
++import { useNavigate } from 'react-router-dom';
++import { Feature, FeatureWithProgress } from '../types';
++import { Trash2, Clock } from 'lucide-react';
++import { useFeatureForm } from '../hooks/useFeatureForm';
++import { STATUS_CONFIG } from '../constants/status';
++
++// Sub-components
++import FeatureHeader from './FeatureModal/FeatureHeader';
++import FeatureStats from './FeatureModal/FeatureStats';
++import StatusSelect from './EpicModal/StatusSelect';
++import StoryList from './FeatureModal/StoryList';
++import EpicSelect from './FeatureModal/EpicSelect';
++
++type FeatureModalProps = {
++  isOpen: boolean;
++  onClose: () => void;
++  onSubmit: () => void;
++  feature?: Feature;
++  initialEpicId?: string;
++};
++
++const FeatureModal: React.FC<FeatureModalProps> = ({ isOpen, onClose, onSubmit, feature, initialEpicId }) => {
++  const navigate = useNavigate();
++  const {
++    title,
++    setTitle,
++    description,
++    setDescription,
++    status,
++    setStatus,
++    epicId,
++    setEpicId,
++    userStories,
++    isSubmitting,
++    isLoadingStories,
++    isEditingTitle,
++    setIsEditingTitle,
++    isDirty,
++    handleSubmit,
++    handleDelete
++  } = useFeatureForm({ feature, onClose, onSubmit, initialEpicId });
++
++  const handleGoToEpic = async () => {
++    if (isDirty) {
++      const success = await handleSubmit(undefined, false);
++      if (!success) return;
++    }
++    navigate(`/epics/${epicId}`);
++  };
++
++  if (!isOpen) return null;
++
++  const currentStatus = STATUS_CONFIG[status];
++
++  return (
++    <div className="fixed inset-0 z-50 overflow-y-auto">
++      <div className="flex items-center justify-center min-h-screen p-4">
++        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
++
++        <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-6xl transform transition-all">
++          {/* Progress Ribbon */}
++          <div className={`h-1.5 w-full ${currentStatus.color} transition-colors duration-500`}></div>
++          
++          <form onSubmit={handleSubmit}>
++            <div className="p-8">
++              <FeatureHeader 
++                title={title}
++                isEditingTitle={isEditingTitle}
++                setTitle={setTitle}
++                setIsEditingTitle={setIsEditingTitle}
++                onClose={onClose}
++                feature={feature}
++                storyCount={userStories.length}
++              />
++
++              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
++                {/* Left: Description and Main content */}
++                <div className="lg:col-span-2 space-y-8">
++                  <div>
++                    <div className="flex items-center space-x-2 mb-3 text-gray-500">
++                      <Clock size={16} />
++                      <label htmlFor="description" className="text-xs font-bold uppercase tracking-widest">Description</label>
++                    </div>
++                    <textarea
++                      id="description"
++                      rows={12}
++                      value={description}
++                      onChange={(e) => setDescription(e.target.value)}
++                      placeholder="What is this feature trying to achieve? Define the scope and high-level requirements..."
++                      className="w-full border-gray-200 rounded-xl shadow-sm py-4 px-5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 leading-relaxed transition-all resize-none bg-gray-50/30"
++                    />
++                  </div>
++
++                  <FeatureStats feature={feature as FeatureWithProgress} storyCount={userStories.length} />
++                </div>
++
++                {/* Right: Metadata and Stories */}
++                <div className="space-y-8">
++                  <StatusSelect status={status} setStatus={setStatus} />
++                  <EpicSelect selectedEpicId={epicId} onChange={setEpicId} onGoToEpic={handleGoToEpic} />
++                  <StoryList stories={userStories} isLoading={isLoadingStories} />
++                </div>
++              </div>
++            </div>
++
++            {/* Footer */}
++            <div className="bg-gray-50 px-8 py-5 flex flex-row-reverse items-center gap-3 border-t border-gray-100">
++              <button
++                type="submit"
++                disabled={isSubmitting || (!isDirty && !!feature) || !epicId}
++                className={`flex-none px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-all active:scale-95 ${
++                  isSubmitting || (!isDirty && !!feature) || !epicId ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700'
++                }`}
++              >
++                {isSubmitting ? 'Saving...' : 'Save Changes'}
++              </button>
++              <button
++                type="button"
++                onClick={onClose}
++                className="px-6 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all"
++              >
++                Cancel
++              </button>
++              {feature && (
++                <button
++                  type="button"
++                  onClick={handleDelete}
++                  disabled={isSubmitting}
++                  className="mr-auto p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
++                  title="Delete Feature"
++                >
++                  <Trash2 size={20} />
++                </button>
++              )}
++            </div>
++          </form>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++export default FeatureModal;
+diff --git a/client/src/components/FeatureModal/EpicSelect.tsx b/client/src/components/FeatureModal/EpicSelect.tsx
+new file mode 100644
+index 0000000..f084794
+--- /dev/null
++++ b/client/src/components/FeatureModal/EpicSelect.tsx
+@@ -0,0 +1,60 @@
++import React from 'react';
++import { Tag, Search, ExternalLink } from 'lucide-react';
++import { useEpics } from '../../hooks/useEpics';
++
++type EpicSelectProps = {
++  selectedEpicId: string;
++  onChange: (epicId: string) => void;
++  onGoToEpic?: () => void;
++};
++
++const EpicSelect: React.FC<EpicSelectProps> = ({ selectedEpicId, onChange, onGoToEpic }) => {
++  const { epics, loading } = useEpics();
++
++  return (
++    <div className="space-y-3">
++      <div className="flex items-center space-x-2 text-gray-500">
++        <Tag size={16} />
++        <label htmlFor="epicSelect" className="text-xs font-bold uppercase tracking-widest">Parent Epic</label>
++      </div>
++      <div className="relative">
++        <select
++          id="epicSelect"
++          value={selectedEpicId}
++          onChange={(e) => onChange(e.target.value)}
++          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none transition-all cursor-pointer"
++        >
++          <option value="" disabled>Select an Epic</option>
++          {epics.map((epic) => (
++            <option key={epic._id} value={epic._id}>
++              {epic.title}
++            </option>
++          ))}
++        </select>
++        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
++          <Search size={16} />
++        </div>
++      </div>
++      <div className="flex justify-between items-center px-1">
++        {loading && epics.length === 0 ? (
++          <p className="text-[10px] text-gray-400 animate-pulse font-medium">Loading available epics...</p>
++        ) : (
++          <div /> // Spacer
++        )}
++        
++        {selectedEpicId && onGoToEpic && (
++          <button
++            type="button"
++            onClick={onGoToEpic}
++            className="flex items-center space-x-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-wider group"
++          >
++            <span>Go to Epic</span>
++            <ExternalLink size={10} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
++          </button>
++        )}
++      </div>
++    </div>
++  );
++};
++
++export default EpicSelect;
+diff --git a/client/src/components/FeatureModal/FeatureHeader.tsx b/client/src/components/FeatureModal/FeatureHeader.tsx
+new file mode 100644
+index 0000000..a7037a0
+--- /dev/null
++++ b/client/src/components/FeatureModal/FeatureHeader.tsx
+@@ -0,0 +1,65 @@
++import React from 'react';
++import { Calendar, Tag, X } from 'lucide-react';
++import { Feature } from '../../types';
++
++type FeatureHeaderProps = {
++  title: string;
++  isEditingTitle: boolean;
++  setTitle: (title: string) => void;
++  setIsEditingTitle: (isEditing: boolean) => void;
++  onClose: () => void;
++  feature?: Feature;
++  storyCount: number;
++};
++
++const FeatureHeader: React.FC<FeatureHeaderProps> = ({
++  title,
++  isEditingTitle,
++  setTitle,
++  setIsEditingTitle,
++  onClose,
++  feature,
++  storyCount
++}) => {
++  return (
++    <div className="flex justify-between items-start mb-8">
++      <div className="flex-grow mr-4">
++        {isEditingTitle ? (
++          <input
++            type="text"
++            autoFocus
++            value={title}
++            onChange={(e) => setTitle(e.target.value)}
++            onBlur={() => setIsEditingTitle(false)}
++            onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
++            className="text-4xl font-extrabold text-gray-900 border-b-2 border-indigo-500 focus:outline-none w-full bg-transparent py-1"
++          />
++        ) : (
++          <h2 
++            onClick={() => setIsEditingTitle(true)}
++            className="text-4xl font-extrabold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors py-1 -ml-1 rounded hover:bg-gray-50 px-2 inline-block"
++          >
++            {title || 'New Feature'}
++          </h2>
++        )}
++        {feature && (
++          <div className="flex items-center mt-2 text-gray-400 space-x-4">
++            <div className="flex items-center space-x-1">
++              <Calendar size={14} />
++              <span className="text-xs">Updated {new Date(feature.updatedAt).toLocaleDateString()}</span>
++            </div>
++            <div className="flex items-center space-x-1">
++              <Tag size={14} />
++              <span className="text-xs">{storyCount} User Stories linked</span>
++            </div>
++          </div>
++        )}
++      </div>
++      <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
++        <X size={24} />
++      </button>
++    </div>
++  );
++};
++
++export default FeatureHeader;
+diff --git a/client/src/components/FeatureModal/FeatureStats.tsx b/client/src/components/FeatureModal/FeatureStats.tsx
+new file mode 100644
+index 0000000..38bf73a
+--- /dev/null
++++ b/client/src/components/FeatureModal/FeatureStats.tsx
+@@ -0,0 +1,34 @@
++import React from 'react';
++import { FeatureWithProgress } from '../../types';
++
++type FeatureStatsProps = {
++  feature?: FeatureWithProgress;
++  storyCount: number;
++};
++
++const FeatureStats: React.FC<FeatureStatsProps> = ({ feature, storyCount }) => {
++  if (!feature) return null;
++
++  const progressPercent = Math.round((feature.completedStoryPoints / feature.totalStoryPoints) * 100) || 0;
++
++  return (
++    <div className="grid grid-cols-3 gap-3">
++      <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
++        <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider mb-0.5">Progress</p>
++        <p className="text-lg font-black text-indigo-700">{progressPercent}%</p>
++      </div>
++      <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
++        <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-0.5">Points</p>
++        <p className="text-lg font-black text-emerald-700">
++          {feature.completedStoryPoints} <span className="text-xs font-medium text-emerald-500">/ {feature.totalStoryPoints}</span>
++        </p>
++      </div>
++      <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
++        <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-0.5">Stories</p>
++        <p className="text-lg font-black text-amber-700">{storyCount}</p>
++      </div>
++    </div>
++  );
++};
++
++export default FeatureStats;
+diff --git a/client/src/components/FeatureModal/StoryList.tsx b/client/src/components/FeatureModal/StoryList.tsx
+new file mode 100644
+index 0000000..224fa84
+--- /dev/null
++++ b/client/src/components/FeatureModal/StoryList.tsx
+@@ -0,0 +1,57 @@
++import React from 'react';
++import { ChevronRight, ClipboardList } from 'lucide-react';
++import { UserStory } from '../../types';
++import { STATUS_CONFIG } from '../../constants/status';
++
++type StoryListProps = {
++  stories: UserStory[];
++  isLoading: boolean;
++};
++
++const StoryList: React.FC<StoryListProps> = ({ stories, isLoading }) => {
++  return (
++    <div>
++      <div className="flex items-center justify-between mb-4">
++        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">User Stories</label>
++        <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
++          {stories.length}
++        </span>
++      </div>
++      
++      <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
++        {isLoading ? (
++          <div className="flex items-center justify-center py-12 text-gray-400">
++            <div className="animate-spin mr-2 h-4 w-4 border-2 border-gray-300 border-t-indigo-500 rounded-full" />
++            <span className="text-xs font-medium">Syncing stories...</span>
++          </div>
++        ) : stories.length > 0 ? (
++          stories.map((story) => (
++            <div 
++              key={story._id} 
++              className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-default"
++            >
++              <div className="flex items-center space-x-3 truncate">
++                <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[story.status === 'Waiting for MR' ? 'Blocked' : story.status as any]?.color || 'bg-gray-400'}`} />
++                <span className="text-sm font-semibold text-gray-700 truncate">{story.title}</span>
++              </div>
++              <div className="flex items-center space-x-2">
++                <span className="text-[10px] font-bold text-gray-400">{story.storyPoints} pts</span>
++                <ChevronRight 
++                  size={16} 
++                  className="text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" 
++                />
++              </div>
++            </div>
++          ))
++        ) : (
++          <div className="text-center py-16 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
++            <ClipboardList className="mx-auto text-gray-200 mb-2" size={32} />
++            <p className="text-xs text-gray-400 italic">No user stories linked yet.</p>
++          </div>
++        )}
++      </div>
++    </div>
++  );
++};
++
++export default StoryList;
+diff --git a/client/src/components/ProgressBar.tsx b/client/src/components/ProgressBar.tsx
+new file mode 100644
+index 0000000..95b5252
+--- /dev/null
++++ b/client/src/components/ProgressBar.tsx
+@@ -0,0 +1,30 @@
++import React from 'react';
++
++type ProgressBarProps = {
++  current: number;
++  total: number;
++  label?: string;
++};
++
++const ProgressBar: React.FC<ProgressBarProps> = ({ current, total, label }) => {
++  const percentage = total > 0 ? Math.min(Math.round((current / total) * 100), 100) : 0;
++
++  return (
++    <div className="w-full">
++      <div className="flex justify-between items-center mb-1">
++        {label && <span className="text-xs font-medium text-gray-700">{label}</span>}
++        <span className="text-xs font-medium text-gray-500">{percentage}% ({current}/{total} pts)</span>
++      </div>
++      <div className="w-full bg-gray-200 rounded-full h-2">
++        <div
++          className={`h-2 rounded-full transition-all duration-500 ${
++            percentage === 100 ? 'bg-green-500' : 'bg-indigo-600'
++          }`}
++          style={{ width: `${percentage}%` }}
++        ></div>
++      </div>
++    </div>
++  );
++};
++
++export default ProgressBar;
+diff --git a/client/src/components/ProtectedRoute.tsx b/client/src/components/ProtectedRoute.tsx
+new file mode 100644
+index 0000000..127216f
+--- /dev/null
++++ b/client/src/components/ProtectedRoute.tsx
+@@ -0,0 +1,27 @@
++import React, { ReactNode } from 'react';
++import { Navigate } from 'react-router-dom';
++import { useAuth } from '../hooks/useAuth';
++
++interface ProtectedRouteProps {
++  children?: ReactNode;
++}
++
++const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
++  const { user, loading } = useAuth();
++
++  if (loading) {
++    return (
++      <div className="min-h-screen flex items-center justify-center">
++        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
++      </div>
++    );
++  }
++
++  if (!user) {
++    return <Navigate to="/login" replace />;
++  }
++
++  return <>{children}</>;
++};
++
++export default ProtectedRoute;
+diff --git a/client/src/constants/status.ts b/client/src/constants/status.ts
+new file mode 100644
+index 0000000..e5251e2
+--- /dev/null
++++ b/client/src/constants/status.ts
+@@ -0,0 +1,38 @@
++import { Clock, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
++
++export const STATUS_CONFIG = {
++  'To Do': { 
++    color: 'bg-gray-500', 
++    light: 'bg-gray-50', 
++    text: 'text-gray-800', 
++    border: 'border-gray-200', 
++    cardBg: 'bg-gray-100',
++    icon: Clock 
++  },
++  'In Progress': { 
++    color: 'bg-blue-500', 
++    light: 'bg-blue-50', 
++    text: 'text-blue-800', 
++    border: 'border-blue-200', 
++    cardBg: 'bg-blue-100',
++    icon: TrendingUp 
++  },
++  'Blocked': { 
++    color: 'bg-red-500', 
++    light: 'bg-red-50', 
++    text: 'text-red-800', 
++    border: 'border-red-200', 
++    cardBg: 'bg-red-100',
++    icon: AlertCircle 
++  },
++  'Done': { 
++    color: 'bg-green-500', 
++    light: 'bg-green-50', 
++    text: 'text-green-800', 
++    border: 'border-green-200', 
++    cardBg: 'bg-green-100',
++    icon: CheckCircle2 
++  },
++} as const;
++
++export type StatusType = keyof typeof STATUS_CONFIG;
+diff --git a/client/src/hooks/useEpicForm.ts b/client/src/hooks/useEpicForm.ts
+new file mode 100644
+index 0000000..1d67fb2
+--- /dev/null
++++ b/client/src/hooks/useEpicForm.ts
+@@ -0,0 +1,100 @@
++import { useState, useEffect, useCallback } from 'react';
++import { Epic, Status, Feature } from '../types';
++import { epicService } from '../services/epicService';
++import { featureService } from '../services/featureService';
++
++type UseEpicFormProps = {
++  epic?: Epic;
++  onClose: () => void;
++  onSubmit: () => void;
++};
++
++export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
++  const [title, setTitle] = useState(epic?.title || '');
++  const [description, setDescription] = useState(epic?.description || '');
++  const [status, setStatus] = useState<Status>(epic?.status || 'To Do');
++  const [features, setFeatures] = useState<Feature[]>([]);
++  const [isSubmitting, setIsSubmitting] = useState(false);
++  const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
++  const [isEditingTitle, setIsEditingTitle] = useState(false);
++
++  const fetchFeatures = useCallback(async (epicId: string, silent = false) => {
++    if (!silent) {
++      setIsLoadingFeatures(true);
++    }
++    
++    try {
++      const data = await featureService.getFeatures(epicId);
++      setFeatures(data);
++    } catch (error) {
++      console.error('Failed to fetch features:', error);
++    } finally {
++      setIsLoadingFeatures(false);
++    }
++  }, []);
++
++  useEffect(() => {
++    if (epic?._id) {
++      fetchFeatures(epic._id);
++      
++      const interval = setInterval(() => fetchFeatures(epic._id, true), 5000);
++      return () => clearInterval(interval);
++    }
++  }, [epic?._id, fetchFeatures]);
++
++  const isDirty = title !== (epic?.title || '') || 
++                  description !== (epic?.description || '') || 
++                  status !== (epic?.status || 'To Do');
++
++  const handleSubmit = async (e?: React.FormEvent) => {
++    if (e) e.preventDefault();
++    if (!title.trim()) return;
++
++    setIsSubmitting(true);
++    try {
++      if (epic) {
++        await epicService.updateEpic(epic._id, { title, description, status });
++      } else {
++        await epicService.createEpic({ title, description, status });
++      }
++      onSubmit();
++      onClose();
++    } catch (error) {
++      console.error('Failed to save epic:', error);
++    } finally {
++      setIsSubmitting(false);
++    }
++  };
++
++  const handleDelete = async () => {
++    if (!epic || !window.confirm('Are you sure you want to delete this epic?')) return;
++    
++    setIsSubmitting(true);
++    try {
++      await epicService.deleteEpic(epic._id);
++      onSubmit();
++      onClose();
++    } catch (error) {
++      console.error('Failed to delete epic:', error);
++    } finally {
++      setIsSubmitting(false);
++    }
++  };
++
++  return {
++    title,
++    setTitle,
++    description,
++    setDescription,
++    status,
++    setStatus,
++    features,
++    isSubmitting,
++    isLoadingFeatures,
++    isEditingTitle,
++    setIsEditingTitle,
++    isDirty,
++    handleSubmit,
++    handleDelete
++  };
++};
+diff --git a/client/src/hooks/useEpics.ts b/client/src/hooks/useEpics.ts
+new file mode 100644
+index 0000000..7c8090d
+--- /dev/null
++++ b/client/src/hooks/useEpics.ts
+@@ -0,0 +1,33 @@
++import { useState, useEffect, useCallback } from 'react';
++import { epicService } from '../services/epicService';
++import { EpicWithProgress } from '../types';
++
++export const useEpics = () => {
++  const [epics, setEpics] = useState<EpicWithProgress[]>([]);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState<string | null>(null);
++
++  const fetchEpics = useCallback(async () => {
++    try {
++      const data = await epicService.getEpics();
++      setEpics(data);
++      setError(null);
++    } catch (err) {
++      console.error('Failed to fetch epics:', err);
++      setError('Failed to load epics');
++    } finally {
++      setLoading(false);
++    }
++  }, []);
++
++  useEffect(() => {
++    fetchEpics();
++
++    // 5-second polling sync logic as per AGENTS.md
++    const interval = setInterval(fetchEpics, 5000);
++
++    return () => clearInterval(interval);
++  }, [fetchEpics]);
++
++  return { epics, loading, error, refetch: fetchEpics };
++};
+diff --git a/client/src/hooks/useFeatureForm.ts b/client/src/hooks/useFeatureForm.ts
+new file mode 100644
+index 0000000..99a0f6a
+--- /dev/null
++++ b/client/src/hooks/useFeatureForm.ts
+@@ -0,0 +1,108 @@
++import { useState, useEffect, useCallback } from 'react';
++import { Feature, Status, UserStory } from '../types';
++import { featureService } from '../services/featureService';
++import { userStoryService } from '../services/userStoryService';
++
++type UseFeatureFormProps = {
++  feature?: Feature;
++  onClose: () => void;
++  onSubmit: () => void;
++  initialEpicId?: string;
++};
++
++export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: UseFeatureFormProps) => {
++  const [title, setTitle] = useState(feature?.title || '');
++  const [description, setDescription] = useState(feature?.description || '');
++  const [status, setStatus] = useState<Status>(feature?.status || 'To Do');
++  const [epicId, setEpicId] = useState(feature?.epicId || initialEpicId || '');
++  const [userStories, setUserStories] = useState<UserStory[]>([]);
++  const [isSubmitting, setIsSubmitting] = useState(false);
++  const [isLoadingStories, setIsLoadingStories] = useState(false);
++  const [isEditingTitle, setIsEditingTitle] = useState(false);
++
++  const fetchUserStories = useCallback(async (featureId: string, silent = false) => {
++    if (!silent) {
++      setIsLoadingStories(true);
++    }
++    
++    try {
++      // Assuming userStoryService has a getStories method that takes filters
++      const data = await userStoryService.getUserStories(featureId);
++      setUserStories(data);
++    } catch (error) {
++      console.error('Failed to fetch user stories:', error);
++    } finally {
++      setIsLoadingStories(false);
++    }
++  }, []);
++
++  useEffect(() => {
++    if (feature?._id) {
++      fetchUserStories(feature._id);
++      
++      const interval = setInterval(() => fetchUserStories(feature._id, true), 5000);
++      return () => clearInterval(interval);
++    }
++  }, [feature?._id, fetchUserStories]);
++
++  const isDirty = title !== (feature?.title || '') || 
++                  description !== (feature?.description || '') || 
++                  status !== (feature?.status || 'To Do') ||
++                  epicId !== (feature?.epicId || initialEpicId || '');
++
++  const handleSubmit = async (e?: React.FormEvent, shouldClose = true) => {
++    if (e) e.preventDefault();
++    if (!title.trim() || !epicId) return false;
++
++    setIsSubmitting(true);
++    try {
++      if (feature) {
++        await featureService.updateFeature(feature._id, { title, description, status, epicId });
++      } else {
++        await featureService.createFeature({ title, description, status, epicId });
++      }
++      onSubmit();
++      if (shouldClose) onClose();
++      return true;
++    } catch (error) {
++      console.error('Failed to save feature:', error);
++      return false;
++    } finally {
++      setIsSubmitting(false);
++    }
++  };
++
++  const handleDelete = async () => {
++    if (!feature || !window.confirm('Are you sure you want to delete this feature?')) return;
++    
++    setIsSubmitting(true);
++    try {
++      await featureService.deleteFeature(feature._id);
++      onSubmit();
++      onClose();
++    } catch (error) {
++      console.error('Failed to delete feature:', error);
++    } finally {
++      setIsSubmitting(false);
++    }
++  };
++
++  return {
++    title,
++    setTitle,
++    description,
++    setDescription,
++    status,
++    setStatus,
++    epicId,
++    setEpicId,
++    userStories,
++    isSubmitting,
++    isLoadingStories,
++    isEditingTitle,
++    setIsEditingTitle,
++    isDirty,
++    handleSubmit,
++    handleDelete
++  };
++};
+diff --git a/client/src/hooks/useFeatures.ts b/client/src/hooks/useFeatures.ts
+new file mode 100644
+index 0000000..80a824b
+--- /dev/null
++++ b/client/src/hooks/useFeatures.ts
+@@ -0,0 +1,33 @@
++import { useState, useEffect, useCallback } from 'react';
++import { featureService } from '../services/featureService';
++import { FeatureWithProgress } from '../types';
++
++export const useFeatures = (epicId?: string) => {
++  const [features, setFeatures] = useState<FeatureWithProgress[]>([]);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState<string | null>(null);
++
++  const fetchFeatures = useCallback(async () => {
++    try {
++      const data = await featureService.getFeatures(epicId);
++      setFeatures(data);
++      setError(null);
++    } catch (err) {
++      console.error('Failed to fetch features:', err);
++      setError('Failed to load features');
++    } finally {
++      setLoading(false);
++    }
++  }, [epicId]);
++
++  useEffect(() => {
++    fetchFeatures();
++
++    // 5-second polling sync logic as per AGENTS.md
++    const interval = setInterval(fetchFeatures, 5000);
++
++    return () => clearInterval(interval);
++  }, [fetchFeatures]);
++
++  return { features, loading, error, refetch: fetchFeatures };
++};
+diff --git a/client/src/layouts/DashboardLayout.tsx b/client/src/layouts/DashboardLayout.tsx
+index 4aa74a6..6dd4009 100644
+--- a/client/src/layouts/DashboardLayout.tsx
++++ b/client/src/layouts/DashboardLayout.tsx
+@@ -1,20 +1,26 @@
+-import React, { ReactNode } from 'react';
++import React from 'react';
++import { Link, useLocation, Outlet } from 'react-router-dom';
+ import { useAuth } from '../hooks/useAuth';
+ 
+-interface DashboardLayoutProps {
+-  children: ReactNode;
+-  activeTab: string;
+-  setActiveTab: (tab: string) => void;
+-}
+-
+-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, activeTab, setActiveTab }) => {
++const DashboardLayout: React.FC = () => {
+   const { user, logout } = useAuth();
+-  const tabs = ['Epics', 'Features', 'Sprints'];
++  const location = useLocation();
++  
++  const tabs = [
++    { name: 'Epics', path: '/epics' },
++    { name: 'Features', path: '/features' },
++    { name: 'Sprints', path: '/sprints' }
++  ];
++
++  const isActive = (path: string) => {
++    if (path === '/epics' && location.pathname.startsWith('/epics')) return true;
++    return location.pathname === path;
++  };
+ 
+   return (
+     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+-        <h1 className="text-xl font-bold tracking-tight text-indigo-600">🔨 Mjolnir</h1>
++        <Link to="/epics" className="text-xl font-bold tracking-tight text-indigo-600">🔨 Mjolnir</Link>
+         <div className="flex items-center space-x-4">
+           <div className="flex items-center space-x-3">
+             <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+@@ -31,24 +37,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, activeTab,
+       <nav className="bg-white border-b border-gray-200 px-6">
+         <div className="flex space-x-8">
+           {tabs.map((tab) => (
+-            <button
+-              key={tab}
+-              onClick={() => setActiveTab(tab)}
++            <Link
++              key={tab.name}
++              to={tab.path}
+               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+-                activeTab === tab
++                isActive(tab.path)
+                   ? 'border-indigo-500 text-indigo-600'
+                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+               }`}
+             >
+-              {tab}
+-            </button>
++              {tab.name}
++            </Link>
+           ))}
+         </div>
+       </nav>
+ 
+       <main className="p-6">
+         <div className="max-w-7xl mx-auto">
+-          {children}
++          <Outlet />
+         </div>
+       </main>
+     </div>
+diff --git a/client/src/main.tsx b/client/src/main.tsx
+index c6be123..2d369e7 100644
+--- a/client/src/main.tsx
++++ b/client/src/main.tsx
+@@ -1,5 +1,6 @@
+ import { StrictMode } from 'react'
+ import { createRoot } from 'react-dom/client'
++import { BrowserRouter } from 'react-router-dom'
+ import { GoogleOAuthProvider } from '@react-oauth/google'
+ import { AuthProvider } from './store/AuthProvider'
+ import './index.css'
+@@ -9,10 +10,12 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+ 
+ createRoot(document.getElementById('root')!).render(
+   <StrictMode>
+-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+-      <AuthProvider>
+-        <App />
+-      </AuthProvider>
+-    </GoogleOAuthProvider>
++    <BrowserRouter>
++      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
++        <AuthProvider>
++          <App />
++        </AuthProvider>
++      </GoogleOAuthProvider>
++    </BrowserRouter>
+   </StrictMode>,
+ )
+diff --git a/client/src/pages/EpicsPage.tsx b/client/src/pages/EpicsPage.tsx
+index 410b8c1..981d2b1 100644
+--- a/client/src/pages/EpicsPage.tsx
++++ b/client/src/pages/EpicsPage.tsx
+@@ -1,18 +1,146 @@
+-import React from 'react';
++import React, { useState, useEffect } from 'react';
++import { useNavigate, useParams } from 'react-router-dom';
++import { useEpics } from '../hooks/useEpics';
++import EpicCard from '../components/EpicCard';
++import EpicModal from '../components/EpicModal';
++import CollapsibleSection from '../components/CollapsibleSection';
++import { Epic, EpicWithProgress } from '../types';
++import { Coffee, Plus, Layers } from 'lucide-react';
++import EmptyState from '../components/EmptyState';
+ 
+ const EpicsPage: React.FC = () => {
+-  return (
+-    <div>
+-      <h2 className="text-2xl font-bold mb-4">Epics</h2>
++  const navigate = useNavigate();
++  const { epicId } = useParams<{ epicId: string }>();
++  const [isModalOpen, setIsModalOpen] = useState(false);
++  const { epics, loading, error, refetch } = useEpics();
++  const [selectedEpic, setSelectedEpic] = useState<Epic | undefined>(undefined);
++
++  useEffect(() => {
++    if (epicId === 'new') {
++      setSelectedEpic(undefined);
++      setIsModalOpen(true);
++    } else if (epicId && epics.length > 0) {
++      const epic = epics.find(e => e._id === epicId);
++      if (epic) {
++        setSelectedEpic(epic);
++        setIsModalOpen(true);
++      } else if (!loading) {
++        // Epic not found, maybe redirect to /epics
++        navigate('/epics', { replace: true });
++      }
++    } else if (!epicId) {
++      setIsModalOpen(false);
++      setSelectedEpic(undefined);
++    }
++  }, [epicId, epics, loading, navigate]);
++
++  const handleCreateClick = () => {
++    navigate('/epics/new');
++  };
++
++  const handleEpicClick = (epic: EpicWithProgress) => {
++    navigate(`/epics/${epic._id}`);
++  };
++
++  const handleModalClose = () => {
++    navigate('/epics');
++  };
++
++  const handleModalSubmit = () => {
++    refetch();
++  };
++
++  if (loading && epics.length === 0) {
++    return (
++      <div className="flex justify-center items-center h-64">
++        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
++      </div>
++    );
++  }
++
++  if (error && epics.length === 0) {
++    return (
++      <div className="bg-red-50 p-4 rounded-md text-red-700 border border-red-200">
++        <p className="font-medium">Error: {error}</p>
++        <button 
++          onClick={() => refetch()}
++          className="mt-2 text-sm font-semibold underline hover:text-red-800"
++        >
++          Try again
++        </button>
++      </div>
++    );
++  }
++
++  const inProgressEpics = epics.filter((e) => e.status === 'In Progress');
++  const toDoEpics = epics.filter((e) => e.status === 'To Do');
++  const blockedEpics = epics.filter((e) => e.status === 'Blocked');
++  const doneEpics = epics.filter((e) => e.status === 'Done');
++
++  const renderSection = (title: string, filteredEpics: EpicWithProgress[]) => (
++    <CollapsibleSection title={title} count={filteredEpics.length}>
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+-          <h3 className="font-semibold text-lg mb-2">Example Epic</h3>
+-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+-            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '45%' }}></div>
++        {filteredEpics.map((epic) => (
++          <EpicCard 
++            key={epic._id} 
++            epic={epic} 
++            onClick={handleEpicClick} 
++          />
++        ))}
++        {filteredEpics.length === 0 && (
++          <div className="col-span-full py-10 flex flex-col items-center justify-center bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200 transition-colors hover:bg-gray-50">
++            <Coffee className="text-gray-300 mb-3" size={32} />
++            <p className="text-gray-400 text-sm font-medium">All clear in {title}</p>
+           </div>
+-          <span className="text-xs text-gray-500 font-medium">45% Complete</span>
++        )}
++      </div>
++    </CollapsibleSection>
++  );
++
++  return (
++    <div className="space-y-8">
++      <div className="flex justify-between items-center">
++        <div>
++          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Epics</h2>
++          <p className="text-gray-500 mt-1">Manage high-level goals and project milestones.</p>
+         </div>
++        <button
++          onClick={handleCreateClick}
++          className="inline-flex items-center px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
++        >
++          <Plus className="-ml-1 mr-2" size={18} />
++          Create Epic
++        </button>
++      </div>
++
++      <div className="space-y-4">
++        {epics.length > 0 ? (
++          <>
++            {renderSection('Blocked', blockedEpics)}
++            {renderSection('In Progress', inProgressEpics)}
++            {renderSection('To Do', toDoEpics)}
++            {renderSection('Done', doneEpics)}
++          </>
++        ) : !loading && !error && (
++          <EmptyState
++            icon={<Layers size={48} />}
++            title="No epics found"
++            description="Epics represent high-level goals or project milestones. Create your first epic to start organizing your work into features and stories."
++            actionText="Create your first Epic"
++            onAction={handleCreateClick}
++          />
++        )}
+       </div>
++
++      {isModalOpen && (
++        <EpicModal
++          key={selectedEpic?._id || 'new'}
++          isOpen={isModalOpen}
++          onClose={handleModalClose}
++          onSubmit={handleModalSubmit}
++          epic={selectedEpic}
++        />
++      )}
+     </div>
+   );
+ };
+diff --git a/client/src/pages/FeaturesPage.tsx b/client/src/pages/FeaturesPage.tsx
+index de3f41b..8467f9f 100644
+--- a/client/src/pages/FeaturesPage.tsx
++++ b/client/src/pages/FeaturesPage.tsx
+@@ -1,10 +1,211 @@
+-import React from 'react';
++import React, { useState, useEffect, useMemo } from 'react';
++import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
++import { useFeatures } from '../hooks/useFeatures';
++import { useEpics } from '../hooks/useEpics';
++import FeatureCard from '../components/FeatureCard';
++import FeatureModal from '../components/FeatureModal';
++import CollapsibleSection from '../components/CollapsibleSection';
++import { FeatureWithProgress, EpicWithProgress } from '../types';
++import { Coffee, Plus, Filter, Layout, ArrowLeft } from 'lucide-react';
++import EmptyState from '../components/EmptyState';
++import ProgressBar from '../components/ProgressBar';
+ 
+ const FeaturesPage: React.FC = () => {
++  const navigate = useNavigate();
++  const { featureId } = useParams<{ featureId: string }>();
++  const [searchParams, setSearchParams] = useSearchParams();
++  const epicIdFilter = searchParams.get('epicId') || undefined;
++
++  const [isModalOpen, setIsModalOpen] = useState(false);
++  const [selectedFeature, setSelectedFeature] = useState<FeatureWithProgress | undefined>(undefined);
++
++  const { features, loading: loadingFeatures, error: featureError, refetch: refetchFeatures } = useFeatures(epicIdFilter);
++  const { epics, loading: loadingEpics } = useEpics();
++
++  const selectedEpic = useMemo(() => 
++    epics.find(e => e._id === epicIdFilter),
++    [epics, epicIdFilter]
++  );
++
++  useEffect(() => {
++    if (featureId === 'new') {
++      setSelectedFeature(undefined);
++      setIsModalOpen(true);
++    } else if (featureId && features.length > 0) {
++      const feature = features.find(f => f._id === featureId);
++      if (feature) {
++        setSelectedFeature(feature);
++        setIsModalOpen(true);
++      } else if (!loadingFeatures) {
++        navigate('/features', { replace: true });
++      }
++    } else if (!featureId) {
++      setIsModalOpen(false);
++      setSelectedFeature(undefined);
++    }
++  }, [featureId, features, loadingFeatures, navigate]);
++
++  const handleCreateClick = () => {
++    navigate(`/features/new${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
++  };
++
++  const handleFeatureClick = (feature: FeatureWithProgress) => {
++    navigate(`/features/${feature._id}${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
++  };
++
++  const handleModalClose = () => {
++    navigate(`/features${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
++  };
++
++  const handleModalSubmit = () => {
++    refetchFeatures();
++  };
++
++  const handleEpicFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
++    const value = e.target.value;
++    if (value === 'all') {
++      searchParams.delete('epicId');
++    } else {
++      searchParams.set('epicId', value);
++    }
++    setSearchParams(searchParams);
++  };
++
++  if (loadingFeatures && features.length === 0 && !epicIdFilter) {
++    return (
++      <div className="flex justify-center items-center h-64">
++        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
++      </div>
++    );
++  }
++
++  const blockedFeatures = features.filter((f) => f.status === 'Blocked');
++  const inProgressFeatures = features.filter((f) => f.status === 'In Progress');
++  const toDoFeatures = features.filter((f) => f.status === 'To Do');
++  const doneFeatures = features.filter((f) => f.status === 'Done');
++
++  const renderSection = (title: string, filteredFeatures: FeatureWithProgress[]) => (
++    <CollapsibleSection title={title} count={filteredFeatures.length}>
++      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
++        {filteredFeatures.map((feature) => (
++          <FeatureCard 
++            key={feature._id} 
++            feature={feature} 
++            onClick={handleFeatureClick} 
++            hideEpicTag={!!epicIdFilter}
++          />
++        ))}
++        {filteredFeatures.length === 0 && (
++          <div className="col-span-full py-10 flex flex-col items-center justify-center bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200 transition-colors hover:bg-gray-50">
++            <Coffee className="text-gray-300 mb-3" size={32} />
++            <p className="text-gray-400 text-sm font-medium">All clear in {title}</p>
++          </div>
++        )}
++      </div>
++    </CollapsibleSection>
++  );
++
+   return (
+-    <div>
+-      <h2 className="text-2xl font-bold mb-4">Features</h2>
+-      <p className="text-gray-500">Grouped by Epic...</p>
++    <div className="space-y-8">
++      {/* Header & Filters */}
++      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
++        <div>
++          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Features</h2>
++          <p className="text-gray-500 mt-1">Break down epics into manageable chunks of work.</p>
++        </div>
++
++        <div className="flex flex-wrap items-center gap-4">
++          <div className="relative">
++            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
++              <Filter size={16} />
++            </div>
++            <select
++              value={epicIdFilter || 'all'}
++              onChange={handleEpicFilterChange}
++              className="pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none transition-all cursor-pointer"
++            >
++              <option value="all">All Epics</option>
++              {epics.map((epic) => (
++                <option key={epic._id} value={epic._id}>{epic.title}</option>
++              ))}
++            </select>
++          </div>
++
++          <button
++            onClick={handleCreateClick}
++            className="inline-flex items-center px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
++          >
++            <Plus className="-ml-1 mr-2" size={18} />
++            Create Feature
++          </button>
++        </div>
++      </div>
++
++      {/* Epic Context Bar */}
++      {selectedEpic && (
++        <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all animate-in fade-in slide-in-from-top-4">
++          <div className="flex items-center space-x-4">
++            <div className="p-2.5 bg-indigo-50 rounded-lg text-indigo-600">
++              <Layout size={20} />
++            </div>
++            <div>
++              <div className="flex items-center space-x-2">
++                <h3 className="text-lg font-bold text-gray-900">{selectedEpic.title}</h3>
++                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[9px] uppercase font-bold tracking-widest border border-gray-200">
++                  {selectedEpic.status}
++                </span>
++              </div>
++              <p className="text-gray-400 text-xs font-medium mt-0.5">Parent Epic Context</p>
++            </div>
++          </div>
++          <div className="flex-grow max-w-md">
++            <div className="flex justify-between items-center mb-1.5">
++              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Overall Progress</span>
++              <span className="text-xs font-black text-indigo-600">{Math.round((selectedEpic.completedStoryPoints / selectedEpic.totalStoryPoints) * 100) || 0}%</span>
++            </div>
++            <ProgressBar 
++              current={selectedEpic.completedStoryPoints} 
++              total={selectedEpic.totalStoryPoints} 
++              className="h-2 bg-gray-100"
++              indicatorClassName="bg-indigo-600"
++            />
++          </div>
++        </div>
++      )}
++
++      {/* Status Board */}
++      <div className="space-y-4">
++        {features.length > 0 ? (
++          <>
++            {renderSection('Blocked', blockedFeatures)}
++            {renderSection('In Progress', inProgressFeatures)}
++            {renderSection('To Do', toDoFeatures)}
++            {renderSection('Done', doneFeatures)}
++          </>
++        ) : !loadingFeatures && !featureError && (
++          <EmptyState
++            icon={<Layout size={48} />}
++            title={epicIdFilter ? "No features in this Epic" : "No features found"}
++            description={epicIdFilter 
++              ? "This epic hasn't been broken down into features yet. Start by creating the first architectural chunk."
++              : "Features represent major functional components of your project. Create your first feature to start planning user stories."
++            }
++            actionText="Create your first Feature"
++            onAction={handleCreateClick}
++          />
++        )}
++      </div>
++
++      {isModalOpen && (
++        <FeatureModal
++          key={selectedFeature?._id || 'new'}
++          isOpen={isModalOpen}
++          onClose={handleModalClose}
++          onSubmit={handleModalSubmit}
++          feature={selectedFeature}
++          initialEpicId={epicIdFilter}
++        />
++      )}
+     </div>
+   );
+ };
+diff --git a/client/src/services/epicService.ts b/client/src/services/epicService.ts
+new file mode 100644
+index 0000000..bde3773
+--- /dev/null
++++ b/client/src/services/epicService.ts
+@@ -0,0 +1,23 @@
++import api from './api';
++import { Epic, EpicWithProgress } from '../types';
++
++export const epicService = {
++  getEpics: async (): Promise<EpicWithProgress[]> => {
++    const response = await api.get('/epics');
++    return response.data;
++  },
++
++  createEpic: async (data: Partial<Epic>): Promise<Epic> => {
++    const response = await api.post('/epics', data);
++    return response.data;
++  },
++
++  updateEpic: async (id: string, data: Partial<Epic>): Promise<Epic> => {
++    const response = await api.put(`/epics/${id}`, data);
++    return response.data;
++  },
++
++  deleteEpic: async (id: string): Promise<void> => {
++    await api.delete(`/epics/${id}`);
++  },
++};
+diff --git a/client/src/services/featureService.ts b/client/src/services/featureService.ts
+new file mode 100644
+index 0000000..2e23b3d
+--- /dev/null
++++ b/client/src/services/featureService.ts
+@@ -0,0 +1,24 @@
++import api from './api';
++import { Feature, FeatureWithProgress } from '../types';
++
++export const featureService = {
++  getFeatures: async (epicId?: string): Promise<FeatureWithProgress[]> => {
++    const params = epicId ? { epicId } : {};
++    const response = await api.get('/features', { params });
++    return response.data;
++  },
++
++  createFeature: async (data: Partial<Feature>): Promise<Feature> => {
++    const response = await api.post('/features', data);
++    return response.data;
++  },
++
++  updateFeature: async (id: string, data: Partial<Feature>): Promise<Feature> => {
++    const response = await api.put(`/features/${id}`, data);
++    return response.data;
++  },
++
++  deleteFeature: async (id: string): Promise<void> => {
++    await api.delete(`/features/${id}`);
++  },
++};
+diff --git a/client/src/services/userStoryService.ts b/client/src/services/userStoryService.ts
+new file mode 100644
+index 0000000..644a967
+--- /dev/null
++++ b/client/src/services/userStoryService.ts
+@@ -0,0 +1,26 @@
++import api from './api';
++import { UserStory } from '../types';
++
++export const userStoryService = {
++  getUserStories: async (featureId?: string, sprintId?: string): Promise<UserStory[]> => {
++    const params: any = {};
++    if (featureId) params.featureId = featureId;
++    if (sprintId) params.sprintId = sprintId;
++    const response = await api.get('/user-stories', { params });
++    return response.data;
++  },
++
++  createUserStory: async (data: Partial<UserStory>): Promise<UserStory> => {
++    const response = await api.post('/user-stories', data);
++    return response.data;
++  },
++
++  updateUserStory: async (id: string, data: Partial<UserStory>): Promise<UserStory> => {
++    const response = await api.put(`/user-stories/${id}`, data);
++    return response.data;
++  },
++
++  deleteUserStory: async (id: string): Promise<void> => {
++    await api.delete(`/user-stories/${id}`);
++  },
++};
+diff --git a/client/src/store/authContext.ts b/client/src/store/authContext.ts
+index 0dfe9d9..e0fdefc 100644
+--- a/client/src/store/authContext.ts
++++ b/client/src/store/authContext.ts
+@@ -1,11 +1,5 @@
+ import { createContext } from 'react';
+-
+-export interface User {
+-  id: string;
+-  email: string;
+-  name: string;
+-  picture?: string;
+-}
++import { User } from '../types';
+ 
+ export interface AuthContextType {
+   user: User | null;
+diff --git a/client/src/types/index.ts b/client/src/types/index.ts
+new file mode 100644
+index 0000000..6944366
+--- /dev/null
++++ b/client/src/types/index.ts
+@@ -0,0 +1,64 @@
++export type Status = 'To Do' | 'In Progress' | 'Blocked' | 'Done';
++
++export type UserStoryStatus = 'To Do' | 'In Progress' | 'Blocked' | 'Waiting for MR' | 'Done';
++
++export type Epic = {
++  _id: string;
++  title: string;
++  description?: string;
++  status: Status;
++  createdAt: string;
++  updatedAt: string;
++};
++
++export type EpicWithProgress = Epic & {
++  totalStoryPoints: number;
++  completedStoryPoints: number;
++  featureCount: number;
++};
++
++export type Feature = {
++  _id: string;
++  title: string;
++  description?: string;
++  status: Status;
++  epicId: string;
++  createdAt: string;
++  updatedAt: string;
++};
++
++export type FeatureWithProgress = Feature & {
++  epicTitle: string;
++  userStoryCount: number;
++  totalStoryPoints: number;
++  completedStoryPoints: number;
++};
++
++export type UserStory = {
++  _id: string;
++  title: string;
++  description?: string;
++  status: UserStoryStatus;
++  storyPoints: number;
++  featureId: string;
++  sprintId?: string;
++  assignedUserId?: string;
++  createdAt: string;
++  updatedAt: string;
++};
++
++export type User = {
++  _id: string;
++  googleId: string;
++  email: string;
++  name: string;
++  isApproved: boolean;
++  isAdmin: boolean;
++};
++
++export type Sprint = {
++  _id: string;
++  name: string;
++  startDate: string;
++  endDate: string;
++};
+diff --git a/server/package.json b/server/package.json
+index 6546217..8d78df3 100644
+--- a/server/package.json
++++ b/server/package.json
+@@ -8,7 +8,7 @@
+     "start": "node dist/index.js",
+     "dev": "tsx watch src/index.ts",
+     "build": "tsc",
+-    "test": "jest"
++    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+   },
+   "keywords": [],
+   "author": "",
+diff --git a/server/src/config.ts b/server/src/config.ts
+index a40649f..5448f41 100644
+--- a/server/src/config.ts
++++ b/server/src/config.ts
+@@ -5,6 +5,7 @@ dotenv.config();
+ export const config = {
+   port: parseInt(process.env['PORT'] || '5001', 10),
+   mongoUri: process.env['MONGODB_URI'] || 'mongodb://localhost:27017/mjolnir',
++  dbName: process.env['DB_NAME'] || 'mjolnir',
+   jwtSecret: process.env['JWT_SECRET'] || 'secret',
+   frontendUrl: process.env['FRONTEND_URL'] || 'http://localhost:5173',
+   googleClientId: process.env['GOOGLE_CLIENT_ID'],
+diff --git a/server/src/dal/EpicDAL.ts b/server/src/dal/EpicDAL.ts
+index 49a7057..9c6b19f 100644
+--- a/server/src/dal/EpicDAL.ts
++++ b/server/src/dal/EpicDAL.ts
+@@ -5,6 +5,50 @@ export class EpicDAL {
+     return await Epic.find();
+   }
+ 
++  static async findAllWithProgress() {
++    return await Epic.aggregate([
++      {
++        $lookup: {
++          from: 'features',
++          localField: '_id',
++          foreignField: 'epicId',
++          as: 'features',
++        },
++      },
++      {
++        $lookup: {
++          from: 'userstories',
++          localField: 'features._id',
++          foreignField: 'featureId',
++          as: 'userStories',
++        },
++      },
++      {
++        $addFields: {
++          featureCount: { $size: '$features' },
++          totalStoryPoints: { $sum: '$userStories.storyPoints' },
++          completedStoryPoints: {
++            $sum: {
++              $map: {
++                input: '$userStories',
++                as: 'story',
++                in: {
++                  $cond: [{ $eq: ['$$story.status', 'Done'] }, '$$story.storyPoints', 0],
++                },
++              },
++            },
++          },
++        },
++      },
++      {
++        $project: {
++          features: 0,
++          userStories: 0,
++        },
++      },
++    ]);
++  }
++
+   static async findById(id: string) {
+     return await Epic.findById(id);
+   }
+diff --git a/server/src/dal/FeatureDAL.ts b/server/src/dal/FeatureDAL.ts
+index 712d235..642c369 100644
+--- a/server/src/dal/FeatureDAL.ts
++++ b/server/src/dal/FeatureDAL.ts
+@@ -1,3 +1,4 @@
++import mongoose from 'mongoose';
+ import Feature, { Feature as FeatureType } from '../models/Feature.js';
+ import { Status } from '../models/Epic.js';
+ 
+@@ -6,6 +7,59 @@ export class FeatureDAL {
+     return await Feature.find(filters);
+   }
+ 
++  static async findWithProgress(filters: any = {}) {
++    const match: any = {};
++    if (filters.epicId) {
++      match.epicId = new mongoose.Types.ObjectId(filters.epicId as string);
++    }
++
++    return await Feature.aggregate([
++      { $match: match },
++      {
++        $lookup: {
++          from: 'epics',
++          localField: 'epicId',
++          foreignField: '_id',
++          as: 'epic',
++        },
++      },
++      { $unwind: '$epic' },
++      {
++        $lookup: {
++          from: 'userstories',
++          localField: '_id',
++          foreignField: 'featureId',
++          as: 'userStories',
++        },
++      },
++      {
++        $addFields: {
++          epicTitle: '$epic.title',
++          userStoryCount: { $size: '$userStories' },
++          totalStoryPoints: { $sum: '$userStories.storyPoints' },
++          completedStoryPoints: {
++            $sum: {
++              $map: {
++                input: '$userStories',
++                as: 'story',
++                in: {
++                  $cond: [{ $eq: ['$$story.status', 'Done'] }, '$$story.storyPoints', 0],
++                },
++              },
++            },
++          },
++        },
++      },
++      {
++        $project: {
++          epic: 0,
++          userStories: 0,
++        },
++      },
++      { $sort: { updatedAt: -1 } }
++    ]);
++  }
++
+   static async findById(id: string) {
+     return await Feature.findById(id);
+   }
+diff --git a/server/src/index.ts b/server/src/index.ts
+index 03e151a..10b7edc 100644
+--- a/server/src/index.ts
++++ b/server/src/index.ts
+@@ -46,8 +46,10 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+ 
+ const startServer = async () => {
+   try {
+-    await mongoose.connect(config.mongoUri);
+-    console.log('Connected to MongoDB');
++    await mongoose.connect(config.mongoUri, {
++      dbName: config.dbName
++    });
++    console.log(`Connected to MongoDB database: ${config.dbName}`);
+     
+     if (process.env['NODE_ENV'] !== 'test') {
+       app.listen(config.port, () => {
+diff --git a/server/src/services/EpicService.ts b/server/src/services/EpicService.ts
+index 62adf3a..991136e 100644
+--- a/server/src/services/EpicService.ts
++++ b/server/src/services/EpicService.ts
+@@ -3,7 +3,7 @@ import { Epic as EpicType } from '../models/Epic.js';
+ 
+ export class EpicService {
+   static async getAll() {
+-    return await EpicDAL.findAll();
++    return await EpicDAL.findAllWithProgress();
+   }
+ 
+   static async create(data: Partial<EpicType>) {
+diff --git a/server/src/services/FeatureService.ts b/server/src/services/FeatureService.ts
+index f2a55b6..0e9107b 100644
+--- a/server/src/services/FeatureService.ts
++++ b/server/src/services/FeatureService.ts
+@@ -3,7 +3,7 @@ import { Feature as FeatureType } from '../models/Feature.js';
+ 
+ export class FeatureService {
+   static async getAll(filters: any = {}) {
+-    return await FeatureDAL.find(filters);
++    return await FeatureDAL.findWithProgress(filters);
+   }
+ 
+   static async create(data: Partial<FeatureType>) {
+diff --git a/server/src/tests/app.test.ts b/server/src/tests/app.test.ts
+new file mode 100644
+index 0000000..3098661
+--- /dev/null
++++ b/server/src/tests/app.test.ts
+@@ -0,0 +1,25 @@
++import request from 'supertest';
++import { connectTestDB, closeTestDB } from './testHelper.js';
++
++const { app } = await import('../index.js');
++
++describe('App E2E Tests', () => {
++  beforeAll(async () => {
++    await connectTestDB();
++  });
++
++  afterAll(async () => {
++    await closeTestDB();
++  });
++
++  it('should return 200 OK for /health', async () => {
++    const response = await request(app).get('/health');
++    expect(response.status).toBe(200);
++    expect(response.body.status).toBe('ok');
++  });
++
++  it('should return 404 for unknown routes', async () => {
++    const response = await request(app).get('/api/unknown-route');
++    expect(response.status).toBe(404);
++  });
++});
+diff --git a/server/src/tests/epic.test.ts b/server/src/tests/epic.test.ts
+index 1f660b8..a921726 100644
+--- a/server/src/tests/epic.test.ts
++++ b/server/src/tests/epic.test.ts
+@@ -23,11 +23,14 @@ describe('Epic E2E Tests', () => {
+ 
+   beforeAll(async () => {
+     await connectTestDB();
++  });
++
++  beforeEach(async () => {
++    await clearTestDB();
+     token = await getAuthToken();
+   });
+ 
+   afterAll(async () => {
+-    await clearTestDB();
+     await closeTestDB();
+   });
+ 
+@@ -46,6 +49,11 @@ describe('Epic E2E Tests', () => {
+   });
+ 
+   it('should get all epics', async () => {
++    await request(app)
++      .post('/api/epics')
++      .set('Authorization', `Bearer ${token}`)
++      .send({ title: 'Initial Epic' });
++
+     const response = await request(app)
+       .get('/api/epics')
+       .set('Authorization', `Bearer ${token}`);
+diff --git a/server/src/tests/feature.test.ts b/server/src/tests/feature.test.ts
+index 4356257..755a66d 100644
+--- a/server/src/tests/feature.test.ts
++++ b/server/src/tests/feature.test.ts
+@@ -24,6 +24,10 @@ describe('Feature E2E Tests', () => {
+ 
+   beforeAll(async () => {
+     await connectTestDB();
++  });
++
++  beforeEach(async () => {
++    await clearTestDB();
+     token = await getAuthToken();
+     
+     // Create an epic to link features to
+@@ -35,7 +39,6 @@ describe('Feature E2E Tests', () => {
+   });
+ 
+   afterAll(async () => {
+-    await clearTestDB();
+     await closeTestDB();
+   });
+ 
+@@ -60,9 +63,43 @@ describe('Feature E2E Tests', () => {
+ 
+     expect(response.status).toBe(200);
+     expect(Array.isArray(response.body)).toBe(true);
++    // Note: epics are joined so epicId is checked on the resulting object
+     expect(response.body.every((f: any) => f.epicId === epicId)).toBe(true);
+   });
+ 
++  it('should get features with progress metrics', async () => {
++    // 1. Create a feature
++    const featureRes = await request(app)
++      .post('/api/features')
++      .set('Authorization', `Bearer ${token}`)
++      .send({ title: 'Feature with Progress', epicId });
++    const featureId = featureRes.body._id;
++
++    // 2. Create user stories
++    await request(app)
++      .post('/api/user-stories')
++      .set('Authorization', `Bearer ${token}`)
++      .send({ title: 'Story 1', featureId, storyPoints: 5, status: 'Done' });
++
++    await request(app)
++      .post('/api/user-stories')
++      .set('Authorization', `Bearer ${token}`)
++      .send({ title: 'Story 2', featureId, storyPoints: 3, status: 'In Progress' });
++
++    // 3. Get features and verify progress
++    const response = await request(app)
++      .get(`/api/features?epicId=${epicId}`)
++      .set('Authorization', `Bearer ${token}`);
++
++    expect(response.status).toBe(200);
++    const feature = response.body.find((f: any) => f._id === featureId);
++    expect(feature).toBeDefined();
++    expect(feature.userStoryCount).toBe(2);
++    expect(feature.totalStoryPoints).toBe(8);
++    expect(feature.completedStoryPoints).toBe(5);
++    expect(feature.epicTitle).toBe('Epic for Features');
++  });
++
+   it('should update a feature', async () => {
+     const createRes = await request(app)
+       .post('/api/features')
+diff --git a/server/src/tests/sprint.test.ts b/server/src/tests/sprint.test.ts
+index bb82ecc..99c8f00 100644
+--- a/server/src/tests/sprint.test.ts
++++ b/server/src/tests/sprint.test.ts
+@@ -23,11 +23,14 @@ describe('Sprint E2E Tests', () => {
+ 
+   beforeAll(async () => {
+     await connectTestDB();
++  });
++
++  beforeEach(async () => {
++    await clearTestDB();
+     token = await getAuthToken();
+   });
+ 
+   afterAll(async () => {
+-    await clearTestDB();
+     await closeTestDB();
+   });
+ 
+@@ -46,12 +49,22 @@ describe('Sprint E2E Tests', () => {
+   });
+ 
+   it('should get all sprints', async () => {
++    await request(app)
++      .post('/api/sprints')
++      .set('Authorization', `Bearer ${token}`)
++      .send({
++        name: 'Initial Sprint',
++        startDate: new Date(),
++        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
++      });
++
+     const response = await request(app)
+       .get('/api/sprints')
+       .set('Authorization', `Bearer ${token}`);
+ 
+     expect(response.status).toBe(200);
+     expect(Array.isArray(response.body)).toBe(true);
++    expect(response.body.length).toBeGreaterThan(0);
+   });
+ 
+   it('should trigger sprint migration', async () => {
+@@ -112,4 +125,51 @@ describe('Sprint E2E Tests', () => {
+     
+     expect(updatedStoryRes.body.some((s: any) => s._id === storyRes.body._id)).toBe(true);
+   });
++
++  it('should update a sprint', async () => {
++    const createRes = await request(app)
++      .post('/api/sprints')
++      .set('Authorization', `Bearer ${token}`)
++      .send({
++        name: 'Sprint to Update',
++        startDate: new Date(),
++        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
++      });
++    
++    const sprintId = createRes.body._id;
++
++    const response = await request(app)
++      .put(`/api/sprints/${sprintId}`)
++      .set('Authorization', `Bearer ${token}`)
++      .send({ name: 'Updated Sprint Name' });
++
++    expect(response.status).toBe(200);
++    expect(response.body.name).toBe('Updated Sprint Name');
++  });
++
++  it('should delete a sprint', async () => {
++    const createRes = await request(app)
++      .post('/api/sprints')
++      .set('Authorization', `Bearer ${token}`)
++      .send({
++        name: 'Sprint to Delete',
++        startDate: new Date(),
++        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
++      });
++    
++    const sprintId = createRes.body._id;
++
++    const response = await request(app)
++      .delete(`/api/sprints/${sprintId}`)
++      .set('Authorization', `Bearer ${token}`);
++
++    expect(response.status).toBe(200);
++    expect(response.body.message).toBe('Sprint deleted');
++
++    const getRes = await request(app)
++      .get('/api/sprints')
++      .set('Authorization', `Bearer ${token}`);
++    
++    expect(getRes.body.some((s: any) => s._id === sprintId)).toBe(false);
++  });
+ });
+diff --git a/server/src/tests/testHelper.ts b/server/src/tests/testHelper.ts
+index 95869ff..9297336 100644
+--- a/server/src/tests/testHelper.ts
++++ b/server/src/tests/testHelper.ts
+@@ -2,16 +2,40 @@ import mongoose from 'mongoose';
+ import { config } from '../config.js';
+ 
+ export const connectTestDB = async () => {
+-  const mongoUri = config.mongoUri.includes('_test') 
+-    ? config.mongoUri 
+-    : `${config.mongoUri}_test`;
++  const mongoUri = config.mongoUri;
++  // Ensure the test database name always ends with '_test'
++  const testDbName = config.dbName.toLowerCase().endsWith('test') 
++    ? config.dbName 
++    : `${config.dbName}_test`;
+     
+-  if (mongoose.connection.readyState === 0) {
+-    await mongoose.connect(mongoUri);
++  // Force disconnect if already connected to a non-test database
++  if (mongoose.connection.readyState !== 0) {
++    const currentDb = mongoose.connection.name;
++    if (!currentDb.toLowerCase().includes('test')) {
++      console.warn(`CRITICAL: Disconnecting from potential production/dev database: ${currentDb}`);
++      await mongoose.disconnect();
++    } else {
++      // Already connected to a test database, but let's make sure it's the right one
++      if (mongoose.connection.name !== testDbName) {
++        await mongoose.disconnect();
++      } else {
++        return;
++      }
++    }
+   }
++
++  await mongoose.connect(mongoUri, {
++    dbName: testDbName
++  });
++  console.log(`Tests connected to database: ${mongoose.connection.name}`);
+ };
+ 
+ export const clearTestDB = async () => {
++  const dbName = mongoose.connection.name;
++  if (!dbName.toLowerCase().includes('test')) {
++    throw new Error(`SAFETY TRIGGERED: Refusing to clear database "${dbName}" because it does not contain "test" in its name.`);
++  }
++
+   const collections = mongoose.connection.collections;
+   for (const key in collections) {
+     await collections[key].deleteMany({});
+diff --git a/server/src/tests/userStory.test.ts b/server/src/tests/userStory.test.ts
+index 5120965..676d957 100644
+--- a/server/src/tests/userStory.test.ts
++++ b/server/src/tests/userStory.test.ts
+@@ -25,6 +25,10 @@ describe('UserStory E2E Tests', () => {
+ 
+   beforeAll(async () => {
+     await connectTestDB();
++  });
++
++  beforeEach(async () => {
++    await clearTestDB();
+     token = await getAuthToken();
+     
+     const epicRes = await request(app)
+@@ -41,7 +45,6 @@ describe('UserStory E2E Tests', () => {
+   });
+ 
+   afterAll(async () => {
+-    await clearTestDB();
+     await closeTestDB();
+   });
+ 
+@@ -138,4 +141,39 @@ describe('UserStory E2E Tests', () => {
+     feature = featureRes.body.find((f: any) => f._id === featureId);
+     expect(feature.status).toBe('Done');
+   });
++
++  it('should get all user stories', async () => {
++    await request(app)
++      .post('/api/user-stories')
++      .set('Authorization', `Bearer ${token}`)
++      .send({ title: 'Initial Story', featureId, storyPoints: 1 });
++
++    const response = await request(app)
++      .get('/api/user-stories')
++      .set('Authorization', `Bearer ${token}`);
++
++    expect(response.status).toBe(200);
++    expect(Array.isArray(response.body)).toBe(true);
++    expect(response.body.length).toBeGreaterThan(0);
++  });
++
++  it('should delete a user story', async () => {
++    const createRes = await request(app)
++      .post('/api/user-stories')
++      .set('Authorization', `Bearer ${token}`)
++      .send({
++        title: 'Story to Delete',
++        featureId,
++        storyPoints: 1
++      });
++    
++    const storyId = createRes.body._id;
++
++    const response = await request(app)
++      .delete(`/api/user-stories/${storyId}`)
++      .set('Authorization', `Bearer ${token}`);
++
++    expect(response.status).toBe(200);
++    expect(response.body.message).toBe('User story deleted');
++  });
+ });

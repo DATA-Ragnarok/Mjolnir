@@ -3,7 +3,7 @@ import { UserStory } from '../types';
 
 export const userStoryService = {
   getUserStories: async (featureId?: string, sprintId?: string): Promise<UserStory[]> => {
-    const params: any = {};
+    const params: Record<string, string> = {};
     if (featureId) params.featureId = featureId;
     if (sprintId) params.sprintId = sprintId;
     const response = await api.get('/user-stories', { params });

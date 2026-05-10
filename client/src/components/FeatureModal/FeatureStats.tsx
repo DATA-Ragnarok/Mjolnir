@@ -9,7 +9,9 @@ type FeatureStatsProps = {
 const FeatureStats: React.FC<FeatureStatsProps> = ({ feature, storyCount }) => {
   if (!feature) return null;
 
-  const progressPercent = Math.round((feature.completedStoryPoints / feature.totalStoryPoints) * 100) || 0;
+  const progressPercent = feature.totalStoryPoints > 0 
+    ? Math.round((feature.completedStoryPoints / feature.totalStoryPoints) * 100) 
+    : 0;
 
   return (
     <div className="grid grid-cols-3 gap-3">

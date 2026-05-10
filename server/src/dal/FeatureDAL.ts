@@ -7,10 +7,10 @@ export class FeatureDAL {
     return await Feature.find(filters);
   }
 
-  static async findWithProgress(filters: any = {}) {
+  static async findWithProgress(filters: { epicId?: string } = {}) {
     const match: any = {};
     if (filters.epicId) {
-      match.epicId = new mongoose.Types.ObjectId(filters.epicId as string);
+      match.epicId = new mongoose.Types.ObjectId(filters.epicId);
     }
 
     return await Feature.aggregate([

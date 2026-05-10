@@ -19,18 +19,21 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingStories, setIsLoadingStories] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchUserStories = useCallback(async (featureId: string, silent = false) => {
     if (!silent) {
       setIsLoadingStories(true);
+      setError(null);
     }
     
     try {
       // Assuming userStoryService has a getStories method that takes filters
       const data = await userStoryService.getUserStories(featureId);
       setUserStories(data);
-    } catch (error) {
-      console.error('Failed to fetch user stories:', error);
+    } catch (err: any) {
+      console.error('Failed to fetch user stories:', err);
+      if (!silent) setError('Failed to load user stories.');
     } finally {
       setIsLoadingStories(false);
     }
@@ -55,6 +58,7 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
     if (!title.trim() || !epicId) return false;
 
     setIsSubmitting(true);
+    setError(null);
     try {
       if (feature) {
         await featureService.updateFeature(feature._id, { title, description, status, epicId });
@@ -64,8 +68,9 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
       onSubmit();
       if (shouldClose) onClose();
       return true;
-    } catch (error) {
-      console.error('Failed to save feature:', error);
+    } catch (err: any) {
+      console.error('Failed to save feature:', err);
+      setError(err.response?.data?.message || 'Failed to save feature. Please try again.');
       return false;
     } finally {
       setIsSubmitting(false);
@@ -73,15 +78,17 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
   };
 
   const handleDelete = async () => {
-    if (!feature || !window.confirm('Are you sure you want to delete this feature?')) return;
+    if (!feature) return;
     
     setIsSubmitting(true);
+    setError(null);
     try {
       await featureService.deleteFeature(feature._id);
       onSubmit();
       onClose();
-    } catch (error) {
-      console.error('Failed to delete feature:', error);
+    } catch (err: any) {
+      console.error('Failed to delete feature:', err);
+      setError('Failed to delete feature. It might have user stories linked.');
     } finally {
       setIsSubmitting(false);
     }
@@ -102,6 +109,7 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
     isEditingTitle,
     setIsEditingTitle,
     isDirty,
+    error,
     handleSubmit,
     handleDelete
   };
