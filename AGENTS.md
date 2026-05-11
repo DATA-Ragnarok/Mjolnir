@@ -68,22 +68,22 @@ Tab 2 (Features): Status Board with Epic Context - grouped by status into collap
 - Empty States:
     - Global: If no features exist, show `EmptyState` with a "Create your first Feature" CTA.
     - Sectional: "All clear" placeholder for empty status sections.
-- Interaction: Clicking a card calls `openModal(<FeatureModalContent feature={feature} />)`. 
+- Interaction: Clicking a card calls `openModal(<FeatureModalContent feature={feature} />)`.
 - Navigation: 
     - Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
-    - Nested Navigation: In `EpicModalContent`, clicking a child feature must push `FeatureModalContent` onto the modal stack. In `FeatureModalContent`, the "Go to Epic" link must push the parent `EpicModalContent` onto the stack (or use the back button if it's already in the stack). 
+        - Nested Navigation: In `EpicModalContent`, clicking a child feature must push `FeatureModalContent` onto the modal stack. In `FeatureModalContent`, the "Go to Epic" link must push the parent `EpicModalContent` onto the stack (or use the back button if it's already in the stack). 
 
 Tab 3 (Sprints): Toggleable Backlog and Kanban View - A unified interface for planning and execution.
 - View Toggle: A top-level switch to toggle between "Backlog" and "Sprint" (default) views.
 - Backlog View:
     - Card List: A vertical list of wide cards.
         - First Card: "Backlog" containing all unassigned User Stories (`sprintId` is null).
-        - Subsequent Cards: Sprints ordered by their `endDate` (descending).
+        - Subsequent Sprint Cards: Sprints ordered by their `endDate` (descending).
         - Card Title: "Backlog" for the first card; "Sprint Name (Start Date - End Date)" for others.
     - Card Content: Each card displays a list of its assigned User Stories.
         - Story Details: Title, Assigned User (icon/coin), Status, and Story Points.
     - Interaction: 
-        - Clicking a User Story opens the `UserStoryModal` with the ability to update and delete.
+        - Clicking a User Story opens the `UserStoryModal` with it's details and the ability to update and delete it.
         - "Create New Sprint" button.
         - "Create New User Story" button.
 - Sprint View (Kanban):
