@@ -127,8 +127,11 @@ Frontend Tooling Consistency: When scaffolding or adding dependencies, be mindfu
 
 8. Recent Developments (May 2026)
 - Implemented full Sprints page with Kanban/Backlog toggle and DND support using `@dnd-kit`.
+- **Kanban Reliability**: Implemented the "Sync Lock" pattern to prevent flickering/jumping during polling intervals.
+- **Standardized UI**: Established `ConfirmModalContent` and `EmptyState` as the project-wide standards for interactive feedback.
 - Linked Feature modal to User Story modal via `StoryList` interactivity and nested navigation.
 - Added "Waiting for MR" status to User Stories with associated WIP warnings (yellow glow).
 - Established backend `SprintService` with periodic migration logic for expired sprints (run hourly).
 - Added User management routes and services for approved user lists.
-- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.
+- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.s.
+- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.s the stack.
