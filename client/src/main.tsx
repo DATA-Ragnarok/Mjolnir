@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from './store/AuthProvider'
+import { ModalProvider } from './store/ModalProvider'
 import './index.css'
 import App from './App.tsx'
 
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <AuthProvider>
-          <App />
+          <ModalProvider>
+            <App />
+          </ModalProvider>
         </AuthProvider>
       </GoogleOAuthProvider>
     </BrowserRouter>

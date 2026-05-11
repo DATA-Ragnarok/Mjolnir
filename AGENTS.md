@@ -47,14 +47,18 @@ Middleware: Every API route must check for isApproved === true.
 Bootstrap: The first user registered in the database should be automatically set to isApproved: true and designated as Admin.
 
 5. UI Requirements
-Universal Task Modals: Every task-like element (Epic, Feature, User Story) must be clickable. Clicking an element opens an interactive modal to view and edit its details. Creating new elements must also utilize this same modal structure.
+Universal Task Modals: Implement a global, singleton-based modal system via the `useModal` hook and `ModalProvider`. Every task-like element (Epic, Feature, User Story) must open its respective 'Content' component (e.g., `EpicModalContent`) within this shared shell. 
+- Singleton Pattern: Only one modal shell exists at a time, managed via React Context.
+- Navigation Stack: The modal system must support a navigation stack (push/pop). Opening a child element (e.g., a Feature from within an Epic modal) pushes it onto the stack. 
+- Back Button: A "Back" button must automatically appear in the shared header when the stack has >1 item, allowing seamless return to the parent context.
+- UI Consistency: The shared shell handles the backdrop, header actions (Back/Close), and a status-based progress ribbon.
 
 Tab 1 (Epics): Separated Card List - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done). 
 - Card Details: Each card displays Title, Status (colored badge), Description (max 2 lines), Feature Count, Last Updated Date, and a Progress Bar (Story Points).
 - Empty States:
     - Global: If no epics exist, show a centered `EmptyState` component with an icon, description, and "Create your first Epic" CTA.
     - Sectional: If a specific status section is empty, show a subtle "All clear" placeholder with a coffee icon.
-- Interaction: Clicking a card opens the interactive `EpicModal` for viewing and editing. Creating a new epic also uses the `EpicModal`.
+- Interaction: Clicking a card calls `openModal(<EpicModalContent epic={epic} />)`. Creating a new epic also uses this pattern.
 
 Tab 2 (Features): Status Board with Epic Context - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done).
 - Filtering & Context:
@@ -64,33 +68,36 @@ Tab 2 (Features): Status Board with Epic Context - grouped by status into collap
 - Empty States:
     - Global: If no features exist, show `EmptyState` with a "Create your first Feature" CTA.
     - Sectional: "All clear" placeholder for empty status sections.
-- Interaction: Clicking a card opens the FeatureModal for viewing and editing. Creating a new feature requires selecting a parent Epic within the FeatureModal.
+- Interaction: Clicking a card calls `openModal(<FeatureModalContent feature={feature} />)`. 
 - Navigation: 
     - Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
-    - Go to Epic Link: In the FeatureModal, provide a "Go to Epic" link under the parent Epic selector. Clicking this link must auto-save any unsaved changes in the FeatureModal and navigate the user directly to the relevant Epic modal.
+    - Nested Navigation: In `EpicModalContent`, clicking a child feature must push `FeatureModalContent` onto the modal stack. In `FeatureModalContent`, the "Go to Epic" link must push the parent `EpicModalContent` onto the stack (or use the back button if it's already in the stack). 
 
-Tab 3 (Sprints): Context-Rich Toggle View - A unified interface for planning and execution.
-- View Toggle: A top-level switch to toggle between "Sprint Planning" and "Active Sprint" modes.
-- Sprint Planning Mode (Full Width):
-    - Left Column (Backlog): Searchable list of all unassigned User Stories (`sprintId` is null).
-        - Grouping: Toggle to group stories by their parent Feature/Epic for cohesive planning.
-        - Quick Add: Inline input at the top to quickly create User Story titles.
-    - Right Column (Sprint Buckets): Vertical list of upcoming/planned sprints.
-        - Drag and drop stories from the Backlog into these buckets to assign `sprintId`.
-        - Displays total story points per bucket.
-- Active Sprint Mode (Execution - Full Width):
-    - Header: Displays Active Sprint Name, Date Range, Time Remaining, and a Progress Bar (Story Points).
-    - Kanban Board: 5 status-based columns (To Do, In Progress, Blocked, Waiting for MR, Done).
+Tab 3 (Sprints): Toggleable Backlog and Kanban View - A unified interface for planning and execution.
+- View Toggle: A top-level switch to toggle between "Backlog" and "Sprint" (default) views.
+- Backlog View:
+    - Card List: A vertical list of wide cards.
+        - First Card: "Backlog" containing all unassigned User Stories (`sprintId` is null).
+        - Subsequent Cards: Sprints ordered by their `endDate` (descending).
+        - Card Title: "Backlog" for the first card; "Sprint Name (Start Date - End Date)" for others.
+    - Card Content: Each card displays a list of its assigned User Stories.
+        - Story Details: Title, Assigned User (icon/coin), Status, and Story Points.
+    - Interaction: 
+        - Clicking a User Story opens the `UserStoryModal` with the ability to update and delete.
+        - "Create New Sprint" button.
+        - "Create New User Story" button.
+- Sprint View (Kanban):
+    - Sprint Selector: A dropdown to select any sprint to view. Defaults to the "Current" active sprint.
+    - Kanban Board: 5 status-based columns (To Do, In Progress, Blocked, Waiting for MR, Done) filtered by the selected sprint.
     - Story Card Details:
         - Metadata: Title, Story Points, Feature Name, and Assigned User (avatar/initials).
         - WIP Glow: 
             - Red Border/Glow: If a user has >1 story in "In Progress".
             - Yellow Border/Glow: If a user has >1 story in "Waiting for MR".
-- Interaction & DND:
-    - Use `dnd-kit` for all movements (Backlog to Buckets, Column to Column).
+- Interaction:
     - Clicking any card opens the interactive `UserStoryModal` for viewing/editing.
     - Dragging a story to "Done" triggers the "Status Inheritance" logic.
-- Navigation: Direct link from Features page (clicking "X User Stories") opens the Planning View and highlights the relevant stories.
+- Navigation: Direct link from Features page (clicking "X User Stories") opens the relevant view.
 
 Drag & Drop: Use dnd-kit for vertical and horizontal sorting.
 

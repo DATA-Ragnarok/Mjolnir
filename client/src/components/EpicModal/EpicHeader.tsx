@@ -7,7 +7,6 @@ type EpicHeaderProps = {
   isEditingTitle: boolean;
   setTitle: (title: string) => void;
   setIsEditingTitle: (isEditing: boolean) => void;
-  onClose: () => void;
   epic?: Epic;
   featureCount: number;
 };
@@ -17,13 +16,12 @@ const EpicHeader: React.FC<EpicHeaderProps> = ({
   isEditingTitle,
   setTitle,
   setIsEditingTitle,
-  onClose,
   epic,
   featureCount
 }) => {
   return (
     <div className="flex justify-between items-start mb-8">
-      <div className="flex-grow mr-4">
+      <div className="flex-grow">
         {isEditingTitle ? (
           <input
             type="text"
@@ -55,9 +53,6 @@ const EpicHeader: React.FC<EpicHeaderProps> = ({
           </div>
         )}
       </div>
-      <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-        <X size={24} />
-      </button>
     </div>
   );
 };
