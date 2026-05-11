@@ -28,7 +28,7 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
     try {
       const data = await featureService.getFeatures(epicId);
       setFeatures(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch features:', err);
       if (!silent) setError('Failed to load child features.');
     } finally {
@@ -63,9 +63,9 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
       }
       onSubmit();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save epic:', err);
-      setError(err.response?.data?.message || 'Failed to save epic. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to save epic. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -80,9 +80,9 @@ export const useEpicForm = ({ epic, onClose, onSubmit }: UseEpicFormProps) => {
       await epicService.deleteEpic(epic._id);
       onSubmit();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete epic:', err);
-      setError('Failed to delete epic. It might have child features linked.');
+      setError(err instanceof Error ? err.message : 'Failed to delete epic. It might have child features linked.');
     } finally {
       setIsSubmitting(false);
     }

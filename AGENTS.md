@@ -24,37 +24,43 @@ Activation: IF UserStory.status changes to 'In Progress', SET parent Feature.sta
 
 Completion: IF all UserStories belonging to a Feature are 'Done', SET Feature.status to 'Done'.
 
+Status Set: User Stories use a superset of the standard status set, adding 'Waiting for MR'.
+
 No Cascading Deletion/Completion: If an Epic is moved to 'Done', do NOT modify child statuses.
 
 3. Scrumban Mechanics
 Story Points: Every UserStory must have a storyPoints field (Number).
 
-Sprint Migration: Implement a backend service that checks the endDate of the active Sprint. If the date has passed, any UserStory where status !== 'Done' must have its sprintId updated to the next chronological Sprint ID.
+Sprint Migration: Implemented as a backend service (in `SprintService`) that checks the endDate of the active Sprint periodically (e.g., hourly). If the date has passed, any UserStory where status !== 'Done' has its sprintId updated to the next chronological Sprint ID.
 
 WIP Warnings:
 
-In Progress limit: 1 per user. (Trigger: Red Glow/Border).
+In Progress limit: 1 per user. (Trigger: Red Glow/Border in Kanban).
 
-Waiting for MR limit: 1 per user. (Trigger: Yellow Glow/Border).
+Waiting for MR limit: 1 per user. (Trigger: Yellow Glow/Border in Kanban).
 
 4. Auth & Security
 Method: Google OAuth.
 
-Gatekeeper: Every User document has an isApproved (Boolean).
+Gatekeeper: Every User document has an isApproved (Boolean). Approved users can be fetched via `UserService.getApprovedUsers()`.
 
 Middleware: Every API route must check for isApproved === true.
 
 Bootstrap: The first user registered in the database should be automatically set to isApproved: true and designated as Admin.
 
 5. UI Requirements
-Universal Task Modals: Every task-like element (Epic, Feature, User Story) must be clickable. Clicking an element opens an interactive modal to view and edit its details. Creating new elements must also utilize this same modal structure.
+Universal Task Modals: Implement a global, singleton-based modal system via the `useModal` hook and `ModalProvider`. Every task-like element (Epic, Feature, User Story) must open its respective 'Content' component (e.g., `EpicModalContent`) within this shared shell. 
+- Singleton Pattern: Only one modal shell exists at a time, managed via React Context.
+- Navigation Stack: The modal system must support a navigation stack (push/pop). Opening a child element (e.g., a Feature from within an Epic modal) pushes it onto the stack. 
+- Back Button: A "Back" button must automatically appear in the shared header when the stack has >1 item, allowing seamless return to the parent context.
+- UI Consistency: The shared shell handles the backdrop, header actions (Back/Close), and a status-based progress ribbon.
 
 Tab 1 (Epics): Separated Card List - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done). 
 - Card Details: Each card displays Title, Status (colored badge), Description (max 2 lines), Feature Count, Last Updated Date, and a Progress Bar (Story Points).
 - Empty States:
     - Global: If no epics exist, show a centered `EmptyState` component with an icon, description, and "Create your first Epic" CTA.
     - Sectional: If a specific status section is empty, show a subtle "All clear" placeholder with a coffee icon.
-- Interaction: Clicking a card opens the interactive `EpicModal` for viewing and editing. Creating a new epic also uses the `EpicModal`.
+- Interaction: Clicking a card calls `openModal(<EpicModalContent epic={epic} />)`. Creating a new epic also uses this pattern.
 
 Tab 2 (Features): Status Board with Epic Context - grouped by status into collapsible sections (order: Blocked, In Progress, To Do, Done).
 - Filtering & Context:
@@ -64,32 +70,37 @@ Tab 2 (Features): Status Board with Epic Context - grouped by status into collap
 - Empty States:
     - Global: If no features exist, show `EmptyState` with a "Create your first Feature" CTA.
     - Sectional: "All clear" placeholder for empty status sections.
-- Interaction: Clicking a card opens the FeatureModal for viewing and editing. Creating a new feature requires selecting a parent Epic within the FeatureModal.
+- Interaction: Clicking a card calls `openModal(<FeatureModalContent feature={feature} />)`.
 - Navigation: 
     - Deep-linking from the Epics page (clicking "X Features") must auto-filter this page to the selected Epic.
-    - Go to Epic Link: In the FeatureModal, provide a "Go to Epic" link under the parent Epic selector. Clicking this link must auto-save any unsaved changes in the FeatureModal and navigate the user directly to the relevant Epic modal.
+        - Nested Navigation: In `EpicModalContent`, clicking a child feature must push `FeatureModalContent` onto the modal stack. In `FeatureModalContent`, clicking a child user story must push `UserStoryModalContent` onto the stack. The "Go to Epic/Feature" links must push the parent context onto the stack. 
 
-Tab 3 (Sprints): Hybrid Backlog & Kanban View - A dual-pane layout for planning and execution.
-- Left Pane (Backlog - 1/3 width):
-    - Searchable list of User Stories where `sprintId` is null.
-    - Displays story title, points, and parent hierarchy (Epic > Feature).
-    - Drag stories from here into the Kanban board to assign them to the current sprint.
-- Right Pane (Kanban Board - 2/3 width):
-    - Header & Actions:
-        - Sprint Selector: Dropdown to switch between the Active Sprint and Planned Sprints.
-        - Create Sprint Button: A "+ Create Sprint" button next to the selector that opens the `SprintModal`.
-    - Sprint Info: Displays Sprint Name, Date Range, and a Progress Bar (Story Points completed vs. total).
-    - Columns: 5 status-based columns (To Do, In Progress, Blocked, Waiting for MR, Done).
-- Story Card Details:
-    - Metadata: Title, Story Points, Feature Name, and Assigned User (avatar/initials).
-    - WIP Glow: 
-        - Red Border/Glow: If a user has >1 story in "In Progress".
-        - Yellow Border/Glow: If a user has >1 story in "Waiting for MR".
-- Interaction & DND:
-    - Use `dnd-kit` for all movements (Backlog to Kanban, Column to Column).
-    - Clicking a card opens the `UserStoryModal` for editing and assignment (Feature, Sprint, User).
-    - Dragging a story to the "Done" column triggers the "Status Inheritance" logic.
-- Navigation: Direct link from the Features page (clicking "X User Stories") should open the Backlog and highlight the relevant stories.
+Tab 3 (Sprints): Toggleable Backlog and Kanban View - A unified interface for planning and execution (implemented using `@dnd-kit`).
+- View Toggle: A top-level switch to toggle between "Backlog" and "Kanban" (default) views.
+- Backlog View:
+    - Card List: A vertical list of wide cards.
+        - First Card: "Product Backlog" containing all unassigned User Stories (`sprintId` is null).
+        - Subsequent Sprint Cards: Sprints ordered by their `endDate` (descending).
+        - Card Title: "Product Backlog" for the first card; "Sprint Name (Start Date - End Date)" for others.
+    - Card Content: Each card displays a list of its assigned User Stories.
+        - Story Details: Title, Status (colored badge), and Story Points.
+    - Interaction: 
+        - Clicking a User Story opens the `UserStoryModal` with its details and the ability to update and delete it.
+        - "New Sprint" button opens `SprintModalContent`.
+        - "New Story" button opens `UserStoryModalContent`.
+- Kanban View:
+    - Sprint Selector: A dropdown to select any sprint to view. Defaults to the "Current Active Sprint".
+    - Kanban Board: 5 status-based columns (To Do, In Progress, Blocked, Waiting for MR, Done) filtered by the selected sprint.
+    - Story Card Details:
+        - Metadata: Title, Story Points, and Assigned User (initials coin).
+        - WIP Glow: 
+            - Red Border/Glow: If a user has >1 story in "In Progress".
+            - Yellow Border/Glow: If a user has >1 story in "Waiting for MR".
+- Interaction:
+    - Clicking any card opens the interactive `UserStoryModal` for viewing/editing.
+    - Dragging a story between columns updates its status via `userStoryService`.
+    - Dragging a story to "Done" triggers the "Status Inheritance" logic.
+- Navigation: Direct link from Features page (clicking "X User Stories") opens the relevant view.
 
 Drag & Drop: Use dnd-kit for vertical and horizontal sorting.
 
@@ -98,9 +109,9 @@ TypeScript: Use `type` instead of `interface` for all Models and Definitions. Do
 
 Modularity: Keep Controller logic separate from Mongoose Models.
 
-Safety: Always include error handling for the "Status Inheritance" triggers to prevent infinite loops.
+Safety: Always include error handling for the "Status Inheritance" triggers to prevent infinite loops. Backend logic must ensure atomicity where possible.
 
-Testing: every route in the server should have e2e tests that covers it's logic
+Testing: every route in the server should have e2e tests that covers its logic.
 
 7. Tooling & Environment Standards
 Three-Tier Architecture: Strictly maintain separation between Controller, Service, and DAL layers.
@@ -113,3 +124,14 @@ TypeScript Build Isolation (Backend/Frontend): Strict separation of source code 
 Server Module Format (ESM): The backend MUST use ECMAScript Modules. `package.json` must contain `"type": "module"`. `tsconfig.json` must set `"module": "Node16"` and `"moduleResolution": "node16"`. All local relative imports in the server must explicitly include the `.js` extension.
 
 Frontend Tooling Consistency: When scaffolding or adding dependencies, be mindful of Node.js engine compatibility. Prefer established major versions (e.g., Vite v5, Tailwind v3) over "latest" to avoid silent failures or native binding errors on older Node.js versions.
+
+8. Recent Developments (May 2026)
+- Implemented full Sprints page with Kanban/Backlog toggle and DND support using `@dnd-kit`.
+- **Kanban Reliability**: Implemented the "Sync Lock" pattern to prevent flickering/jumping during polling intervals.
+- **Standardized UI**: Established `ConfirmModalContent` and `EmptyState` as the project-wide standards for interactive feedback.
+- Linked Feature modal to User Story modal via `StoryList` interactivity and nested navigation.
+- Added "Waiting for MR" status to User Stories with associated WIP warnings (yellow glow).
+- Established backend `SprintService` with periodic migration logic for expired sprints (run hourly).
+- Added User management routes and services for approved user lists.
+- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.s.
+- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.s the stack.

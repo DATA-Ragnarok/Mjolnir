@@ -1,38 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEpics } from '../hooks/useEpics';
+import { useModal } from '../hooks/useModal';
 import EpicCard from '../components/EpicCard';
-import EpicModal from '../components/EpicModal';
+import EpicModalContent from '../components/EpicModal/EpicModalContent';
 import CollapsibleSection from '../components/CollapsibleSection';
-import { Epic, EpicWithProgress } from '../types';
+import { EpicWithProgress } from '../types';
 import { Coffee, Plus, Layers } from 'lucide-react';
 import EmptyState from '../components/EmptyState';
 
 const EpicsPage: React.FC = () => {
   const navigate = useNavigate();
   const { epicId } = useParams<{ epicId: string }>();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { openModal, closeModal, isOpen: isModalOpen } = useModal();
   const { epics, loading, error, refetch } = useEpics();
-  const [selectedEpic, setSelectedEpic] = useState<Epic | undefined>(undefined);
+  const lastOpenedId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (epicId === 'new') {
-      setSelectedEpic(undefined);
-      setIsModalOpen(true);
-    } else if (epicId && epics.length > 0) {
-      const epic = epics.find(e => e._id === epicId);
-      if (epic) {
-        setSelectedEpic(epic);
-        setIsModalOpen(true);
+    if (epicId && epics.length > 0 && epicId !== lastOpenedId.current) {
+      const epic = epicId === 'new' ? undefined : epics.find(e => e._id === epicId);
+      
+      if (epic || epicId === 'new') {
+        lastOpenedId.current = epicId;
+        openModal(
+          <EpicModalContent 
+            epic={epic}
+            onClose={() => {}} // useModal's closeModal will be used inside EpicModalContent
+            onSubmit={() => refetch()}
+          />,
+          { 
+            maxWidth: '6xl',
+            onClose: () => {
+              lastOpenedId.current = undefined;
+              navigate('/epics');
+            }
+          }
+        );
       } else if (!loading) {
-        // Epic not found, maybe redirect to /epics
         navigate('/epics', { replace: true });
       }
-    } else if (!epicId) {
-      setIsModalOpen(false);
-      setSelectedEpic(undefined);
+    } else if (!epicId && isModalOpen) {
+      closeModal();
+      lastOpenedId.current = undefined;
     }
-  }, [epicId, epics, loading, navigate]);
+  }, [epicId, epics, loading, navigate, openModal, closeModal, isModalOpen, refetch]);
 
   const handleCreateClick = () => {
     navigate('/epics/new');
@@ -40,14 +51,6 @@ const EpicsPage: React.FC = () => {
 
   const handleEpicClick = (epic: EpicWithProgress) => {
     navigate(`/epics/${epic._id}`);
-  };
-
-  const handleModalClose = () => {
-    navigate('/epics');
-  };
-
-  const handleModalSubmit = () => {
-    refetch();
   };
 
   if (loading && epics.length === 0) {
@@ -131,16 +134,6 @@ const EpicsPage: React.FC = () => {
           />
         )}
       </div>
-
-      {isModalOpen && (
-        <EpicModal
-          key={selectedEpic?._id || 'new'}
-          isOpen={isModalOpen}
-          onClose={handleModalClose}
-          onSubmit={handleModalSubmit}
-          epic={selectedEpic}
-        />
-      )}
     </div>
   );
 };

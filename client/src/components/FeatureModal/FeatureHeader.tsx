@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Tag, X } from 'lucide-react';
+import { Calendar, Tag } from 'lucide-react';
 import { Feature } from '../../types';
 
 type FeatureHeaderProps = {
@@ -7,7 +7,6 @@ type FeatureHeaderProps = {
   isEditingTitle: boolean;
   setTitle: (title: string) => void;
   setIsEditingTitle: (isEditing: boolean) => void;
-  onClose: () => void;
   feature?: Feature;
   storyCount: number;
 };
@@ -17,13 +16,12 @@ const FeatureHeader: React.FC<FeatureHeaderProps> = ({
   isEditingTitle,
   setTitle,
   setIsEditingTitle,
-  onClose,
   feature,
   storyCount
 }) => {
   return (
     <div className="flex justify-between items-start mb-8">
-      <div className="flex-grow mr-4">
+      <div className="flex-grow">
         {isEditingTitle ? (
           <input
             type="text"
@@ -55,9 +53,6 @@ const FeatureHeader: React.FC<FeatureHeaderProps> = ({
           </div>
         )}
       </div>
-      <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-        <X size={24} />
-      </button>
     </div>
   );
 };

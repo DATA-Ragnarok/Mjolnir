@@ -7,10 +7,19 @@ import { STATUS_CONFIG } from '../../constants/status';
 type FeatureListProps = {
   features: Feature[];
   isLoading: boolean;
+  onFeatureClick?: (featureId: string) => void;
 };
 
-const FeatureList: React.FC<FeatureListProps> = ({ features, isLoading }) => {
+const FeatureList: React.FC<FeatureListProps> = ({ features, isLoading, onFeatureClick }) => {
   const navigate = useNavigate();
+
+  const handleClick = (feature: Feature) => {
+    if (onFeatureClick) {
+      onFeatureClick(feature._id);
+    } else {
+      navigate(`/features/${feature._id}?epicId=${feature.epicId}`);
+    }
+  };
 
   return (
     <div>
@@ -31,7 +40,7 @@ const FeatureList: React.FC<FeatureListProps> = ({ features, isLoading }) => {
           features.map((feature) => (
             <div 
               key={feature._id} 
-              onClick={() => navigate(`/features/${feature._id}?epicId=${feature.epicId}`)}
+              onClick={() => handleClick(feature)}
               className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
             >
               <div className="flex items-center space-x-3 truncate">

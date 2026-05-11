@@ -53,7 +53,7 @@ const DashboardLayout: React.FC = () => {
       </nav>
 
       <main className="p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className={location.pathname.startsWith('/sprints') ? "" : "max-w-7xl mx-auto"}>
           <Outlet />
         </div>
       </main>

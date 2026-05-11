@@ -31,7 +31,7 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
       // Assuming userStoryService has a getStories method that takes filters
       const data = await userStoryService.getUserStories(featureId);
       setUserStories(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch user stories:', err);
       if (!silent) setError('Failed to load user stories.');
     } finally {
@@ -68,9 +68,16 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
       onSubmit();
       if (shouldClose) onClose();
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save feature:', err);
-      setError(err.response?.data?.message || 'Failed to save feature. Please try again.');
+      let message = 'Failed to save feature. Please try again.';
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { message?: string } } };
+        message = axiosError.response?.data?.message || message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
       return false;
     } finally {
       setIsSubmitting(false);
@@ -86,9 +93,9 @@ export const useFeatureForm = ({ feature, onClose, onSubmit, initialEpicId }: Us
       await featureService.deleteFeature(feature._id);
       onSubmit();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete feature:', err);
-      setError('Failed to delete feature. It might have user stories linked.');
+      setError(err instanceof Error ? err.message : 'Failed to delete feature. It might have user stories linked.');
     } finally {
       setIsSubmitting(false);
     }

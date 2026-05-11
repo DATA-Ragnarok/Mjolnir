@@ -35,4 +35,17 @@ export const STATUS_CONFIG = {
   },
 } as const;
 
+export const USER_STORY_STATUS_CONFIG = {
+  ...STATUS_CONFIG,
+  'Waiting for MR': { 
+    color: 'bg-yellow-500', 
+    light: 'bg-yellow-50', 
+    text: 'text-yellow-800', 
+    border: 'border-yellow-200', 
+    cardBg: 'bg-yellow-100',
+    icon: Clock 
+  },
+} as const;
+
 export type StatusType = keyof typeof STATUS_CONFIG;
+export type UserStoryStatusType = keyof typeof USER_STORY_STATUS_CONFIG;

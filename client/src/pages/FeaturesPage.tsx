@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useFeatures } from '../hooks/useFeatures';
 import { useEpics } from '../hooks/useEpics';
+import { useModal } from '../hooks/useModal';
 import FeatureCard from '../components/FeatureCard';
-import FeatureModal from '../components/FeatureModal';
+import FeatureModalContent from '../components/FeatureModal/FeatureModalContent';
 import CollapsibleSection from '../components/CollapsibleSection';
-import { FeatureWithProgress, EpicWithProgress } from '../types';
-import { Coffee, Plus, Filter, Layout, ArrowLeft } from 'lucide-react';
+import { FeatureWithProgress } from '../types';
+import { Coffee, Plus, Filter, Layout } from 'lucide-react';
 import EmptyState from '../components/EmptyState';
 import ProgressBar from '../components/ProgressBar';
 
@@ -16,11 +17,10 @@ const FeaturesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const epicIdFilter = searchParams.get('epicId') || undefined;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureWithProgress | undefined>(undefined);
-
+  const { openModal, closeModal, isOpen: isModalOpen } = useModal();
   const { features, loading: loadingFeatures, error: featureError, refetch: refetchFeatures } = useFeatures(epicIdFilter);
-  const { epics, loading: loadingEpics } = useEpics();
+  const { epics } = useEpics();
+  const lastOpenedId = useRef<string | undefined>(undefined);
 
   const selectedEpic = useMemo(() => 
     epics.find(e => e._id === epicIdFilter),
@@ -28,22 +28,34 @@ const FeaturesPage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (featureId === 'new') {
-      setSelectedFeature(undefined);
-      setIsModalOpen(true);
-    } else if (featureId && features.length > 0) {
-      const feature = features.find(f => f._id === featureId);
-      if (feature) {
-        setSelectedFeature(feature);
-        setIsModalOpen(true);
+    if (featureId && features.length > 0 && featureId !== lastOpenedId.current) {
+      const feature = featureId === 'new' ? undefined : features.find(f => f._id === featureId);
+      
+      if (feature || featureId === 'new') {
+        lastOpenedId.current = featureId;
+        openModal(
+          <FeatureModalContent 
+            feature={feature}
+            onClose={() => {}}
+            onSubmit={() => refetchFeatures()}
+            initialEpicId={epicIdFilter}
+          />,
+          { 
+            maxWidth: '6xl',
+            onClose: () => {
+              lastOpenedId.current = undefined;
+              navigate(`/features${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
+            }
+          }
+        );
       } else if (!loadingFeatures) {
         navigate('/features', { replace: true });
       }
-    } else if (!featureId) {
-      setIsModalOpen(false);
-      setSelectedFeature(undefined);
+    } else if (!featureId && isModalOpen) {
+      closeModal();
+      lastOpenedId.current = undefined;
     }
-  }, [featureId, features, loadingFeatures, navigate]);
+  }, [featureId, features, loadingFeatures, navigate, openModal, closeModal, isModalOpen, refetchFeatures, epicIdFilter]);
 
   const handleCreateClick = () => {
     navigate(`/features/new${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
@@ -51,14 +63,6 @@ const FeaturesPage: React.FC = () => {
 
   const handleFeatureClick = (feature: FeatureWithProgress) => {
     navigate(`/features/${feature._id}${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
-  };
-
-  const handleModalClose = () => {
-    navigate(`/features${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
-  };
-
-  const handleModalSubmit = () => {
-    refetchFeatures();
   };
 
   const handleEpicFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -195,17 +199,6 @@ const FeaturesPage: React.FC = () => {
           />
         )}
       </div>
-
-      {isModalOpen && (
-        <FeatureModal
-          key={selectedFeature?._id || 'new'}
-          isOpen={isModalOpen}
-          onClose={handleModalClose}
-          onSubmit={handleModalSubmit}
-          feature={selectedFeature}
-          initialEpicId={epicIdFilter}
-        />
-      )}
     </div>
   );
 };
