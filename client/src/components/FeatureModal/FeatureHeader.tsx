@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Tag, X } from 'lucide-react';
+import { Calendar, Tag } from 'lucide-react';
 import { Feature } from '../../types';
 
 type FeatureHeaderProps = {

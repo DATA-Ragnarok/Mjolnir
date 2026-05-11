@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Feature, FeatureWithProgress } from '../../types';
 import { Trash2, Clock } from 'lucide-react';
 import { useFeatureForm } from '../../hooks/useFeatureForm';
@@ -14,17 +14,16 @@ import StoryList from './StoryList';
 import EpicSelect from './EpicSelect';
 
 import EpicModalContent from '../EpicModal/EpicModalContent';
+import UserStoryModalContent from '../UserStoryModal/UserStoryModalContent';
 import { useEpics } from '../../hooks/useEpics';
 
 type FeatureModalContentProps = {
-  onClose: () => void;
   onSubmit: () => void;
   feature?: Feature;
   initialEpicId?: string;
 };
 
 const FeatureModalContent: React.FC<FeatureModalContentProps> = ({ 
-  onClose, 
   onSubmit, 
   feature, 
   initialEpicId 
@@ -64,12 +63,24 @@ const FeatureModalContent: React.FC<FeatureModalContentProps> = ({
       openModal(
         <EpicModalContent 
           epic={epic}
-          onClose={closeModal}
           onSubmit={onSubmit}
         />,
         { maxWidth: '6xl' }
       );
     }
+  };
+
+  const handleStoryClick = (storyId: string) => {
+    const story = userStories.find(s => s._id === storyId);
+    openModal(
+      <UserStoryModalContent 
+        userStory={story}
+        onSubmit={onSubmit}
+      />,
+      { 
+        maxWidth: '6xl'
+      }
+    );
   };
 
   const handleOpenDeleteConfirm = () => {
@@ -131,7 +142,7 @@ const FeatureModalContent: React.FC<FeatureModalContentProps> = ({
             <div className="space-y-8">
               <StatusSelect status={status} setStatus={setStatus} />
               <EpicSelect selectedEpicId={epicId} onChange={setEpicId} onGoToEpic={handleGoToEpic} />
-              <StoryList stories={userStories} isLoading={isLoadingStories} />
+              <StoryList stories={userStories} isLoading={isLoadingStories} onStoryClick={handleStoryClick} />
             </div>
           </div>
         </div>

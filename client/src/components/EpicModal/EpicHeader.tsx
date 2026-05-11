@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Layers, X } from 'lucide-react';
+import { Calendar, Layers } from 'lucide-react';
 import { Epic } from '../../types';
 
 type EpicHeaderProps = {

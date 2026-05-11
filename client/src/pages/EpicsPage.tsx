@@ -53,14 +53,6 @@ const EpicsPage: React.FC = () => {
     navigate(`/epics/${epic._id}`);
   };
 
-  const handleModalClose = () => {
-    navigate('/epics');
-  };
-
-  const handleModalSubmit = () => {
-    refetch();
-  };
-
   if (loading && epics.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">

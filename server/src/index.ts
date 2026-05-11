@@ -7,7 +7,9 @@ import featureRoutes from './routes/featureRoutes.js';
 import userStoryRoutes from './routes/userStoryRoutes.js';
 import sprintRoutes from './routes/sprintRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
+import { SprintService } from './services/SprintService.js';
 
 export const app = express();
 
@@ -29,6 +31,7 @@ app.use('/api/features', featureRoutes);
 app.use('/api/user-stories', userStoryRoutes);
 app.use('/api/sprints', sprintRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
@@ -70,4 +73,9 @@ const startServer = async () => {
 
 if (process.env['NODE_ENV'] !== 'test') {
   startServer();
+  
+  // Periodic sprint migration check every hour
+  setInterval(() => {
+    SprintService.migrateExpiredSprints().catch(err => console.error('Sprint migration failed:', err));
+  }, 1000 * 60 * 60);
 }

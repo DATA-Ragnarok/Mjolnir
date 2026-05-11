@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Epic, EpicWithProgress } from '../../types';
 import { Trash2, Clock } from 'lucide-react';
 import { useEpicForm } from '../../hooks/useEpicForm';
@@ -14,14 +14,12 @@ import StatusSelect from './StatusSelect';
 import FeatureList from './FeatureList';
 
 type EpicModalContentProps = {
-  onClose: () => void;
   onSubmit: () => void;
   epic?: Epic;
 };
 
-const EpicModalContent: React.FC<EpicModalContentProps> = ({ onClose, onSubmit, epic }) => {
+const EpicModalContent: React.FC<EpicModalContentProps> = ({ onSubmit, epic }) => {
   const { openModal, setOptions, closeModal } = useModal();
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
   const {
     title,
@@ -52,7 +50,6 @@ const EpicModalContent: React.FC<EpicModalContentProps> = ({ onClose, onSubmit, 
     openModal(
       <FeatureModalContent 
         feature={feature}
-        onClose={closeModal}
         onSubmit={onSubmit}
       />,
       { 

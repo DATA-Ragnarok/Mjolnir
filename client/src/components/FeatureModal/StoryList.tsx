@@ -1,14 +1,15 @@
 import React from 'react';
 import { ChevronRight, ClipboardList } from 'lucide-react';
 import { UserStory } from '../../types';
-import { STATUS_CONFIG } from '../../constants/status';
+import { USER_STORY_STATUS_CONFIG } from '../../constants/status';
 
 type StoryListProps = {
   stories: UserStory[];
   isLoading: boolean;
+  onStoryClick?: (storyId: string) => void;
 };
 
-const StoryList: React.FC<StoryListProps> = ({ stories, isLoading }) => {
+const StoryList: React.FC<StoryListProps> = ({ stories, isLoading, onStoryClick }) => {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -28,10 +29,13 @@ const StoryList: React.FC<StoryListProps> = ({ stories, isLoading }) => {
           stories.map((story) => (
             <div 
               key={story._id} 
-              className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-default"
+              onClick={() => onStoryClick && onStoryClick(story._id)}
+              className={`group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm transition-all ${
+                onStoryClick ? 'hover:border-indigo-300 hover:shadow-md cursor-pointer' : 'cursor-default'
+              }`}
             >
               <div className="flex items-center space-x-3 truncate">
-                <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[story.status === 'Waiting for MR' ? 'Blocked' : story.status as any]?.color || 'bg-gray-400'}`} />
+                <div className={`w-2 h-2 rounded-full ${USER_STORY_STATUS_CONFIG[story.status]?.color || 'bg-gray-400'}`} />
                 <span className="text-sm font-semibold text-gray-700 truncate">{story.title}</span>
               </div>
               <div className="flex items-center space-x-2">
