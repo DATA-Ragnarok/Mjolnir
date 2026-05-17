@@ -25,7 +25,6 @@ const EpicsPage: React.FC = () => {
         openModal(
           <EpicModalContent 
             epic={epic}
-            onClose={() => {}} // useModal's closeModal will be used inside EpicModalContent
             onSubmit={() => refetch()}
           />,
           { 

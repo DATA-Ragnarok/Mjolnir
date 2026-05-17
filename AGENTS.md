@@ -125,7 +125,17 @@ Server Module Format (ESM): The backend MUST use ECMAScript Modules. `package.js
 
 Frontend Tooling Consistency: When scaffolding or adding dependencies, be mindful of Node.js engine compatibility. Prefer established major versions (e.g., Vite v5, Tailwind v3) over "latest" to avoid silent failures or native binding errors on older Node.js versions.
 
-8. Recent Developments (May 2026)
+8. Docker & Deployment Standards
+Containerization: The project uses a dual-container architecture (Client & Server) managed by Docker Compose.
+
+Environment Variable Propagation:
+- Server: Variables (e.g., `MONGODB_URI`, `JWT_SECRET`) are passed at runtime via the `environment` key in `docker-compose.yml`, which pulls from the root `.env` file.
+- Client (Vite): Environment variables MUST be prefixed with `VITE_`. Because Vite is a static builder, these variables are baked into the assets at build time. 
+    - Build Arguments: Variables must be passed as `args` in the `build` block of `docker-compose.yml`.
+    - Dockerfile Requirements: The `client/Dockerfile` must explicitly declare `ARG` and `ENV` for each `VITE_` variable before the `npm run build` command.
+    - Change Propagation: Any change to client environment variables in `.env` REQUIRES a full rebuild of the client image (`docker compose up --build`).
+
+9. Recent Developments (May 2026)
 - Implemented full Sprints page with Kanban/Backlog toggle and DND support using `@dnd-kit`.
 - **Kanban Reliability**: Implemented the "Sync Lock" pattern to prevent flickering/jumping during polling intervals.
 - **Standardized UI**: Established `ConfirmModalContent` and `EmptyState` as the project-wide standards for interactive feedback.

@@ -36,7 +36,6 @@ const FeaturesPage: React.FC = () => {
         openModal(
           <FeatureModalContent 
             feature={feature}
-            onClose={() => {}}
             onSubmit={() => refetchFeatures()}
             initialEpicId={epicIdFilter}
           />,
