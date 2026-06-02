@@ -104,8 +104,7 @@ Tab 3 (Sprints): Toggleable Backlog and Kanban View - A unified interface for pl
 
 Drag & Drop: Use dnd-kit for vertical and horizontal sorting.
 
-6. Coding Standards
-TypeScript: Use `type` instead of `interface` for all Models and Definitions. Do not use the "I" prefix for types (e.g., use `User` instead of `IUser`). Types for all the Models should extend Mongoose `Document`. Keep right inheritance between types. No any types allowed.
+6. Standards & Conventions
 
 Modularity: Keep Controller logic separate from Mongoose Models.
 
@@ -134,14 +133,3 @@ Environment Variable Propagation:
     - Build Arguments: Variables must be passed as `args` in the `build` block of `docker-compose.yml`.
     - Dockerfile Requirements: The `client/Dockerfile` must explicitly declare `ARG` and `ENV` for each `VITE_` variable before the `npm run build` command.
     - Change Propagation: Any change to client environment variables in `.env` REQUIRES a full rebuild of the client image (`docker compose up --build`).
-
-9. Recent Developments (May 2026)
-- Implemented full Sprints page with Kanban/Backlog toggle and DND support using `@dnd-kit`.
-- **Kanban Reliability**: Implemented the "Sync Lock" pattern to prevent flickering/jumping during polling intervals.
-- **Standardized UI**: Established `ConfirmModalContent` and `EmptyState` as the project-wide standards for interactive feedback.
-- Linked Feature modal to User Story modal via `StoryList` interactivity and nested navigation.
-- Added "Waiting for MR" status to User Stories with associated WIP warnings (yellow glow).
-- Established backend `SprintService` with periodic migration logic for expired sprints (run hourly).
-- Added User management routes and services for approved user lists.
-- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.s.
-- Unified modal sizing to `6xl` for consistent complex data presentation across the stack.s the stack.
