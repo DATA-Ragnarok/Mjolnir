@@ -22,16 +22,7 @@
 
 ## Data Polling (5-Second Sync)
 
-Client fetches fresh data every 5 seconds using `setInterval`:
-
-```typescript
-useEffect(() => {
-  const interval = setInterval(() => {
-    api.getEpics().then(setEpics).catch(handleError);
-  }, 5000);
-  return () => clearInterval(interval);
-}, []);
-```
+Client fetches fresh data every 5 seconds using `setInterval` function.
 
 **Rules**:
 - Always clear interval in cleanup function (prevent memory leaks).
@@ -40,20 +31,7 @@ useEffect(() => {
 
 ## State Management: AuthContext Only
 
-Use React Context API for global auth state:
-
-```typescript
-type AuthContextType = {
-  user: User | null;
-  isApproved: boolean;
-  token: string | null;
-  loading: boolean;
-  login: () => void;
-  logout: () => void;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-```
+Use React Context API for global auth state (found in ./src/store/authContext.ts).
 
 **Rules**:
 - Store token in localStorage. Verify on app mount.
