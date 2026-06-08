@@ -3,7 +3,7 @@ import { Epic as EpicType } from '../models/Epic.js';
 
 export class EpicService {
   static async getAll() {
-    return await EpicDAL.findAll();
+    return await EpicDAL.findAllWithProgress();
   }
 
   static async create(data: Partial<EpicType>) {

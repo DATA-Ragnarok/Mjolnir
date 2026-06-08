@@ -17,4 +17,8 @@ export class UserService {
   static async getCount() {
     return await UserDAL.count();
   }
+
+  static async getApprovedUsers() {
+    return await UserDAL.find({ isApproved: true });
+  }
 }

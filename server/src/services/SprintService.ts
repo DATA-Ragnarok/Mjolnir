@@ -23,12 +23,15 @@ export class SprintService {
     try {
       const now = new Date();
       const expiredSprints = await SprintDAL.findExpired(now);
+      console.log(`Found ${expiredSprints.length} expired sprints`);
 
       for (const sprint of expiredSprints) {
         const nextSprint = await SprintDAL.findNextSprint(sprint.endDate);
+        console.log(`Next sprint for ${sprint.name}: ${nextSprint?.name || 'none'}`);
         const nextSprintId = nextSprint ? nextSprint._id.toString() : null;
         
-        await UserStoryDAL.migrateIncompleteStories(sprint._id.toString(), nextSprintId);
+        const result = await UserStoryDAL.migrateIncompleteStories(sprint._id.toString(), nextSprintId);
+        console.log(`Migrated ${result.modifiedCount} stories from ${sprint.name} to ${nextSprint?.name || 'Backlog'}`);
       }
     } catch (error) {
       console.error('Error migrating sprints:', error);

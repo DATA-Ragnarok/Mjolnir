@@ -17,4 +17,8 @@ export class UserDAL {
     const user = new User(data);
     return await user.save();
   }
+
+  static async find(query: any = {}) {
+    return await User.find(query);
+  }
 }
