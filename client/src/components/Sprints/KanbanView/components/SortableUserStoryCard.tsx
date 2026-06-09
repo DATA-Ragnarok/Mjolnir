@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AlertCircle } from 'lucide-react';
@@ -52,22 +53,13 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, us
                {story.storyPoints} pts
             </span>
          </div>
-         {story.assignedUserId && (
-           <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] border border-white shadow-sm">
-            {(() => {
-              const user = users.find(u => u._id === story.assignedUserId);
-              if (user && user.name) {
-                const parts = user.name.trim().split(/\s+/);
-                const firstName = parts[0] || '';
-                const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
-                const firstLetterFirstName = firstName.charAt(0) || '';
-                const firstLetterLastName = lastName.charAt(0) || '';
-                return (firstLetterFirstName + firstLetterLastName).toUpperCase();
-              }
-              return story.assignedUserId.slice(-2).toUpperCase();
-            })()}
-           </div>
-         )}
+         {story.assignedUserId && (() => {
+           const user = users.find(u => u._id === story.assignedUserId);
+           if (!user) return null; // hide coin when there's no matching user (treat as unassigned)
+           return (
+             <UserInitialsWithTooltip user={user} />
+           );
+         })()}
       </div>
 
       {wipWarning && (
@@ -80,3 +72,55 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, us
 };
 
 export default SortableUserStoryCard;
+
+// Small helper component placed here to keep file-local logic concise.
+const UserInitialsWithTooltip: React.FC<{ user: User }> = ({ user }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    // show tooltip only after 1 second
+    timerRef.current = window.setTimeout(() => setShowTooltip(true), 250);
+  };
+
+  const handleMouseLeave = () => {
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setShowTooltip(false);
+  };
+
+  const parts = user.name.trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
+  const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+
+  return (
+    <div className="relative flex items-center">
+      <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] border border-white shadow-sm cursor-default"
+      >
+        {initials}
+      </div>
+
+      {showTooltip && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs rounded-md px-2 py-1 shadow-lg z-10">
+          {user.name}
+        </div>
+      )}
+    </div>
+  );
+};
+
