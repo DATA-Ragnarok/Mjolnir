@@ -2,15 +2,16 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AlertCircle } from 'lucide-react';
-import { UserStory } from '../../../../types';
+import { UserStory, User } from '../../../../types';
 
 interface SortableUserStoryCardProps {
   story: UserStory;
+  users?: User[];
   onClick: () => void;
   wipWarning: boolean;
 }
 
-const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, onClick, wipWarning }) => {
+const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, users = [], onClick, wipWarning }) => {
   const {
     attributes,
     listeners,
@@ -53,7 +54,18 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, on
          </div>
          {story.assignedUserId && (
            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] border border-white shadow-sm">
-             {story.assignedUserId.slice(-2).toUpperCase()}
+            {(() => {
+              const user = users.find(u => u._id === story.assignedUserId);
+              if (user && user.name) {
+                const parts = user.name.trim().split(/\s+/);
+                const firstName = parts[0] || '';
+                const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
+                const firstLetterFirstName = firstName.charAt(0) || '';
+                const firstLetterLastName = lastName.charAt(0) || '';
+                return (firstLetterFirstName + firstLetterLastName).toUpperCase();
+              }
+              return story.assignedUserId.slice(-2).toUpperCase();
+            })()}
            </div>
          )}
       </div>

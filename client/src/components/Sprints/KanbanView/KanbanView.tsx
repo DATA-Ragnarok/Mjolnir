@@ -14,7 +14,7 @@ import {
   defaultDropAnimationSideEffects 
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
-import { Sprint, UserStory } from '../../../types';
+import { Sprint, UserStory, User } from '../../../types';
 import { UserStoryStatusType } from '../../../constants/status';
 import { userStoryService } from '../../../services/userStoryService';
 import EmptyState from '../../EmptyState';
@@ -23,6 +23,7 @@ import KanbanColumn from './components/KanbanColumn';
 interface KanbanViewProps {
   sprints: Sprint[];
   userStories: UserStory[];
+  users: User[];
   selectedSprintId: string;
   setSelectedSprintId: (id: string) => void;
   onOpenStory: (id?: string, sprintId?: string) => void;
@@ -33,6 +34,7 @@ interface KanbanViewProps {
 const KanbanView: React.FC<KanbanViewProps> = ({ 
   sprints, 
   userStories, 
+  users,
   selectedSprintId, 
   setSelectedSprintId, 
   onOpenStory, 
@@ -245,6 +247,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({
               key={status}
               status={status}
               stories={localColumns[status] || []}
+              users={users}
               onOpenStory={onOpenStory}
               userInProgressCount={userInProgressCount}
               userWaitingMRCount={userWaitingMRCount}

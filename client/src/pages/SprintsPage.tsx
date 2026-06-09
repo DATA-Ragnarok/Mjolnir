@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useSprints } from '../hooks/useSprints';
 import { useUserStories } from '../hooks/useUserStories';
+import { useUsers } from '../hooks/useUsers';
 import { useModal } from '../hooks/useModal';
 import { Plus, Layout, List, Calendar } from 'lucide-react';
 import UserStoryModalContent from '../components/UserStoryModal/UserStoryModalContent';
@@ -12,6 +13,7 @@ const SprintsPage: React.FC = () => {
   const [view, setView] = useState<'backlog' | 'kanban'>('kanban');
   const { sprints, loading: loadingSprints, refetch: refetchSprints } = useSprints();
   const { userStories, loading: loadingStories, refetch: refetchStories } = useUserStories();
+  const { users, loading: loadingUsers } = useUsers();
   const { openModal } = useModal();
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'current'>('current');
 
@@ -49,7 +51,7 @@ const SprintsPage: React.FC = () => {
     );
   };
 
-  if (loadingSprints || loadingStories) {
+  if (loadingSprints || loadingStories || loadingUsers) {
     return <div className="flex items-center justify-center h-64">Loading...</div>;
   }
 
@@ -112,6 +114,7 @@ const SprintsPage: React.FC = () => {
         <KanbanView 
           sprints={sprints} 
           userStories={userStories} 
+          users={users}
           selectedSprintId={selectedSprintId}
           setSelectedSprintId={setSelectedSprintId}
           onOpenStory={handleOpenUserStory}

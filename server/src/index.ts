@@ -11,6 +11,9 @@ import userRoutes from './routes/userRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
+import dns from 'node:dns';
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 export const app = express();
 
 app.use(cors({

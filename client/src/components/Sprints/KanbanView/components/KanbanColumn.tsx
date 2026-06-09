@@ -1,19 +1,20 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { UserStory } from '../../../../types';
+import { UserStory, User } from '../../../../types';
 import { UserStoryStatusType } from '../../../../constants/status';
 import SortableUserStoryCard from './SortableUserStoryCard';
 
 interface KanbanColumnProps {
   status: UserStoryStatusType;
   stories: UserStory[];
+  users: User[];
   onOpenStory: (id?: string) => void;
   userInProgressCount: Record<string, number>;
   userWaitingMRCount: Record<string, number>;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, onOpenStory, userInProgressCount, userWaitingMRCount }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, users, onOpenStory, userInProgressCount, userWaitingMRCount }) => {
   const { setNodeRef } = useDroppable({
     id: status,
   });
@@ -45,6 +46,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, onOpenStor
             <SortableUserStoryCard 
               key={story._id} 
               story={story} 
+              users={users}
               onClick={() => onOpenStory(story._id)}
               wipWarning={
                 (story.status === 'In Progress' && !!story.assignedUserId && userInProgressCount[story.assignedUserId] > 1) ||
