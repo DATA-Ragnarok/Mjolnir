@@ -95,7 +95,8 @@ export const useUserStoryForm = ({
         storyPoints, 
         featureId, 
         sprintId: sprintId || undefined, 
-        assignedUserId: assignedUserId || undefined 
+        // send explicit null when unassigned so backend will clear the field
+        assignedUserId: assignedUserId === '' ? null : assignedUserId
       };
 
       if (userStory) {
