@@ -7,12 +7,12 @@ import { UserStory, User } from '../../../../types';
 
 interface SortableUserStoryCardProps {
   story: UserStory;
-  users?: User[];
+  assignedUser?: User | null;
   onClick: () => void;
   wipWarning: boolean;
 }
 
-const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, users = [], onClick, wipWarning }) => {
+const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, assignedUser = null, onClick, wipWarning }) => {
   const {
     attributes,
     listeners,
@@ -53,13 +53,9 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, us
                {story.storyPoints} pts
             </span>
          </div>
-         {story.assignedUserId && (() => {
-           const user = users.find(u => u._id === story.assignedUserId);
-           if (!user) return null; // hide coin when there's no matching user (treat as unassigned)
-           return (
-             <UserInitialsWithTooltip user={user} />
-           );
-         })()}
+         {assignedUser && (
+           <UserInitialsWithTooltip user={assignedUser} />
+         )}
       </div>
 
       {wipWarning && (
@@ -89,7 +85,7 @@ const UserInitialsWithTooltip: React.FC<{ user: User }> = ({ user }) => {
 
   const handleMouseEnter = () => {
     // show tooltip only after 1 second
-    timerRef.current = window.setTimeout(() => setShowTooltip(true), 250);
+    timerRef.current = window.setTimeout(() => setShowTooltip(true), 1000);
   };
 
   const handleMouseLeave = () => {

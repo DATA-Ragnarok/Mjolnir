@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { UserStory, User } from '../../../../types';
@@ -21,6 +21,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, users, onO
 
   const points = stories.reduce((acc, s) => acc + s.storyPoints, 0);
 
+  const usersById = useMemo(() => {
+    const map: Record<string, User> = {};
+    users.forEach(u => { map[u._id] = u; });
+    return map;
+  }, [users]);
+
   return (
     <div className="flex-none w-80">
       <div className="flex items-center justify-between mb-4 px-2">
@@ -42,18 +48,21 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, users, onO
           ref={setNodeRef}
           className="space-y-4 min-h-[500px] bg-gray-50/50 p-3 rounded-2xl border-2 border-dashed border-gray-200/50"
         >
-          {stories.map(story => (
-            <SortableUserStoryCard 
-              key={story._id} 
-              story={story} 
-              users={users}
-              onClick={() => onOpenStory(story._id)}
-              wipWarning={
-                (story.status === 'In Progress' && !!story.assignedUserId && userInProgressCount[story.assignedUserId] > 1) ||
-                (story.status === 'Waiting for MR' && !!story.assignedUserId && userWaitingMRCount[story.assignedUserId] > 1)
-              }
-            />
-          ))}
+          {stories.map(story => {
+            const assignedUser = story.assignedUserId ? usersById[story.assignedUserId] ?? null : null;
+            return (
+              <SortableUserStoryCard 
+                key={story._id} 
+                story={story} 
+                assignedUser={assignedUser}
+                onClick={() => onOpenStory(story._id)}
+                wipWarning={
+                  (story.status === 'In Progress' && !!story.assignedUserId && userInProgressCount[story.assignedUserId] > 1) ||
+                  (story.status === 'Waiting for MR' && !!story.assignedUserId && userWaitingMRCount[story.assignedUserId] > 1)
+                }
+              />
+            );
+          })}
         </div>
       </SortableContext>
     </div>
