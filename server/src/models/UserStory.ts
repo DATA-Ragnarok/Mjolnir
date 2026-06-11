@@ -16,7 +16,7 @@ const UserStorySchema: Schema = new Schema({
   title: { type: String, required: true },
   description: { type: String },
   status: { type: String, enum: ['To Do', 'In Progress', 'Blocked', 'Waiting for MR', 'Done'], default: 'To Do' },
-  storyPoints: { type: Number, required: true, default: 0 },
+  storyPoints: { type: Number, required: true, default: 1, min: 1 },
   featureId: { type: Schema.Types.ObjectId, ref: 'Feature', required: true },
   sprintId: { type: Schema.Types.ObjectId, ref: 'Sprint' },
   assignedUserId: { type: Schema.Types.ObjectId, ref: 'User' },

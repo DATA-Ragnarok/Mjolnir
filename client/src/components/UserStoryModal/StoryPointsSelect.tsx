@@ -7,7 +7,6 @@ type StoryPointsSelectProps = {
 };
 
 const POINT_OPTIONS = [
-  { value: 0, label: '0 Points', icon: Hash, color: 'text-gray-500', bg: 'bg-gray-50' },
   { value: 1, label: '1 Point', icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50' },
   { value: 3, label: '3 Points', icon: Rocket, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   { value: 5, label: '5 Points', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
