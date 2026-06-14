@@ -8,8 +8,6 @@ export class UserStoryService {
   }
 
   static async create(data: Partial<UserStoryType>) {
-    // ensure storyPoints is at least 1
-    if (data.storyPoints == null || data.storyPoints < 1) data.storyPoints = 1;
     const story = await UserStoryDAL.create(data);
     
     if (story.status === 'In Progress') {
@@ -22,11 +20,6 @@ export class UserStoryService {
   static async update(id: string, data: Partial<UserStoryType>) {
     const oldStory = await UserStoryDAL.findById(id);
     if (!oldStory) return null;
-
-    // ensure storyPoints is at least 1 when provided
-    if ('storyPoints' in data && (data.storyPoints == null || data.storyPoints < 1)) {
-      data.storyPoints = 1;
-    }
 
     const updatedStory = await UserStoryDAL.update(id, data);
     if (!updatedStory) return null;
