@@ -48,7 +48,7 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, on
       <div className="flex items-center justify-between">
          <div className="flex items-center space-x-2">
             <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-bold uppercase tracking-wider">
-               {(story.storyPoints === 0 ? 1 : story.storyPoints)} pts
+               {story.storyPoints} pts
             </span>
          </div>
          {story.assignedUserId && (
