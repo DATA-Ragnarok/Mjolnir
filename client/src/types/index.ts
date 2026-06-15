@@ -43,6 +43,7 @@ export type UserStory = {
   featureId: string;
   sprintId?: string;
   assignedUserId?: string;
+  assignedUserShort?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -88,6 +88,23 @@ export const useUserStoryForm = ({
     setIsSubmitting(true);
     setError(null);
     try {
+      // compute a short representation for the assigned user so backend can store it
+      let assignedUserShortValue: string | null = null;
+      if (assignedUserId === '') {
+        assignedUserShortValue = null;
+      } else {
+        const u = users.find(x => x._id === assignedUserId);
+        if (u) {
+          const parts = u.name.trim().split(/\s+/);
+          const firstName = parts[0] || '';
+          const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
+          const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+          assignedUserShortValue = initials || u.name.slice(0, 2).toUpperCase();
+        } else {
+          assignedUserShortValue = null;
+        }
+      }
+
       const data = { 
         title, 
         description, 
@@ -96,7 +113,8 @@ export const useUserStoryForm = ({
         featureId, 
         sprintId: sprintId || undefined, 
         // send explicit null when unassigned so backend will clear the field
-        assignedUserId: assignedUserId === '' ? null : assignedUserId
+        assignedUserId: assignedUserId === '' ? null : assignedUserId,
+        assignedUserShort: assignedUserShortValue,
       };
 
       if (userStory) {

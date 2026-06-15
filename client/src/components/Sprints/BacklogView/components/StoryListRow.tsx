@@ -57,8 +57,8 @@ const StoryListRow: React.FC<StoryListRowProps> = ({ story, onClick }) => {
       <div className="flex items-center space-x-4">
          {story.assignedUserId && (
            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs border-2 border-white shadow-sm">
-             {story.assignedUserId.slice(-2).toUpperCase()}
-           </div>
+            {story.assignedUserShort ? story.assignedUserShort : story.assignedUserId.slice(-2).toUpperCase()}
+          </div>
          )}
       </div>
     </div>

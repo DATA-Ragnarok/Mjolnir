@@ -10,6 +10,7 @@ export type UserStory = Document & {
   featureId: mongoose.Types.ObjectId;
   sprintId?: mongoose.Types.ObjectId;
   assignedUserId?: mongoose.Types.ObjectId;
+  assignedUserShort?: string;
 };
 
 const UserStorySchema: Schema = new Schema({
@@ -20,6 +21,7 @@ const UserStorySchema: Schema = new Schema({
   featureId: { type: Schema.Types.ObjectId, ref: 'Feature', required: true },
   sprintId: { type: Schema.Types.ObjectId, ref: 'Sprint' },
   assignedUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+  assignedUserShort: { type: String },
 }, { timestamps: true });
 
 export default mongoose.model<UserStory>('UserStory', UserStorySchema);

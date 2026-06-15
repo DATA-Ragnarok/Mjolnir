@@ -53,8 +53,8 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, as
                {story.storyPoints} pts
             </span>
          </div>
-         {assignedUser && (
-           <UserInitialsWithTooltip user={assignedUser} />
+         {(story.assignedUserShort || assignedUser) && (
+           <UserShortBadge short={story.assignedUserShort} user={assignedUser} />
          )}
       </div>
 
@@ -112,6 +112,60 @@ const UserInitialsWithTooltip: React.FC<{ user: User }> = ({ user }) => {
       </div>
 
       {showTooltip && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs rounded-md px-2 py-1 shadow-lg z-10">
+          {user.name}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const UserShortBadge: React.FC<{ short?: string | null; user?: User | null }> = ({ short, user = null }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    timerRef.current = window.setTimeout(() => setShowTooltip(true), 1000);
+  };
+
+  const handleMouseLeave = () => {
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setShowTooltip(false);
+  };
+
+  let display = short || '';
+  if (!display && user) {
+    const parts = user.name.trim().split(/\s+/);
+    const firstName = parts[0] || '';
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
+    display = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+  }
+
+  if (!display) return null;
+
+  return (
+    <div className="relative flex items-center">
+      <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] border border-white shadow-sm cursor-default"
+      >
+        {display}
+      </div>
+
+      {showTooltip && user && (
         <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs rounded-md px-2 py-1 shadow-lg z-10">
           {user.name}
         </div>
