@@ -33,8 +33,4 @@ export class UserStoryDAL {
       { $set: { sprintId: newSprintId } }
     );
   }
-
-  static async findWithPopulate(filters: any = {}) {
-    return await UserStory.find(filters).populate('assignedUser');
-  }
 }
