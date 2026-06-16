@@ -19,7 +19,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, onOpenStor
   });
 
   const points = stories.reduce((acc, s) => acc + s.storyPoints, 0);
-
+  
   return (
     <div className="flex-none w-80">
       <div className="flex items-center justify-between mb-4 px-2">
