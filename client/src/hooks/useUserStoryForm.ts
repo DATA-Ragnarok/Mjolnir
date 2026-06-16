@@ -27,7 +27,9 @@ export const useUserStoryForm = ({
   const [storyPoints, setStoryPoints] = useState<number>(userStory?.storyPoints || 1);
   const [featureId, setFeatureId] = useState(userStory?.featureId || initialFeatureId || '');
   const [sprintId, setSprintId] = useState(userStory?.sprintId || initialSprintId || '');
-  const [assignedUserId, setAssignedUserId] = useState(userStory?.assignedUserId || '');
+  const [assignedUserId, setAssignedUserId] = useState(
+    typeof userStory?.assignedUser === 'object' ? userStory.assignedUser._id : ''
+  );
   
   const [users, setUsers] = useState<User[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -76,7 +78,7 @@ export const useUserStoryForm = ({
                   storyPoints !== (userStory?.storyPoints || 0) ||
                   featureId !== (userStory?.featureId || initialFeatureId || '') ||
                   sprintId !== (userStory?.sprintId || initialSprintId || '') ||
-                  assignedUserId !== (userStory?.assignedUserId || '');
+                  assignedUserId !== (typeof userStory?.assignedUser === 'object' ? userStory.assignedUser._id : '');
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -95,7 +97,7 @@ export const useUserStoryForm = ({
         storyPoints, 
         featureId, 
         sprintId: sprintId || undefined, 
-        assignedUserId: assignedUserId || undefined 
+        assignedUser: assignedUserId || undefined 
       };
 
       if (userStory) {
