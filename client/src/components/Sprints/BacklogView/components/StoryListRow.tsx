@@ -1,6 +1,7 @@
 import React from 'react';
 import { USER_STORY_STATUS_CONFIG } from '../../../../constants/status';
 import { UserStory } from '../../../../types';
+import { getInitialsFromName } from '../../../../utils/initials';
 
 interface HashIconProps {
   size?: number;
@@ -55,9 +56,9 @@ const StoryListRow: React.FC<StoryListRowProps> = ({ story, onClick }) => {
         </div>
       </div>
       <div className="flex items-center space-x-4">
-         {story.assignedUserId && (
+         {story.assignedUser && (
            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs border-2 border-white shadow-sm">
-             {story.assignedUserId.slice(-2).toUpperCase()}
+             {getInitialsFromName(story.assignedUser.name)}
            </div>
          )}
       </div>

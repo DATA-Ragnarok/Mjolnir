@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { User } from './User.js';
 
 export type UserStoryStatus = 'To Do' | 'In Progress' | 'Blocked' | 'Waiting for MR' | 'Done';
 
@@ -9,7 +10,7 @@ export type UserStory = Document & {
   storyPoints: number;
   featureId: mongoose.Types.ObjectId;
   sprintId?: mongoose.Types.ObjectId;
-  assignedUserId?: mongoose.Types.ObjectId;
+  assignedUser?: mongoose.Types.ObjectId | User | null;
 };
 
 const UserStorySchema: Schema = new Schema({
@@ -19,7 +20,7 @@ const UserStorySchema: Schema = new Schema({
   storyPoints: { type: Number, required: true, default: 1 },
   featureId: { type: Schema.Types.ObjectId, ref: 'Feature', required: true },
   sprintId: { type: Schema.Types.ObjectId, ref: 'Sprint' },
-  assignedUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+  assignedUser: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 export default mongoose.model<UserStory>('UserStory', UserStorySchema);

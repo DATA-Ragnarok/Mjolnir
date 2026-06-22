@@ -16,4 +16,12 @@ const UserSchema: Schema = new Schema({
   isAdmin: { type: Boolean, default: false },
 }, { timestamps: true });
 
+// Add virtual property 'id' that maps to '_id' for cleaner API
+UserSchema.virtual('id').get(function(this: any) {
+  return this._id.toString();
+});
+
+// Ensure virtuals are included when converting to JSON
+UserSchema.set('toJSON', { virtuals: true });
+
 export default mongoose.model<User>('User', UserSchema);
