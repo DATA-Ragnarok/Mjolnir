@@ -10,7 +10,7 @@ export type UserStory = Document & {
   storyPoints: number;
   featureId: mongoose.Types.ObjectId;
   sprintId?: mongoose.Types.ObjectId;
-  assignedUser?: mongoose.Types.ObjectId | User;
+  assignedUser?: mongoose.Types.ObjectId | User | null;
 };
 
 const UserStorySchema: Schema = new Schema({

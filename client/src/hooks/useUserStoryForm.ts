@@ -88,6 +88,7 @@ export const useUserStoryForm = ({
     setIsSubmitting(true);
     setError(null);
     try {
+      const assignedUser = assignedUserId ? users.find(u => u._id === assignedUserId) : null;
       const data = { 
         title, 
         description, 
@@ -95,7 +96,7 @@ export const useUserStoryForm = ({
         storyPoints, 
         featureId, 
         sprintId: sprintId || undefined, 
-        assignedUser: assignedUserId ? assignedUserId : null
+        assignedUser
       };
 
       if (userStory) {
