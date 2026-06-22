@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AlertCircle } from 'lucide-react';
 import { UserStory } from '../../../../types';
+import { getInitialsFromName } from '../../../../utils/initials';
 
 interface SortableUserStoryCardProps {
   story: UserStory;
@@ -51,9 +52,9 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, on
                {story.storyPoints} pts
             </span>
          </div>
-         {story.assignedUserId && (
+         {story.assignedUser && (
            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] border border-white shadow-sm">
-             {story.assignedUserId.slice(-2).toUpperCase()}
+             {getInitialsFromName(story.assignedUser.name)}
            </div>
          )}
       </div>

@@ -188,12 +188,12 @@ const KanbanView: React.FC<KanbanViewProps> = ({
   const userWaitingMRCount: Record<string, number> = {};
 
   Object.values(localColumns).flat().forEach(story => {
-    if (story.assignedUserId) {
+    if (story.assignedUser) {
       if (story.status === 'In Progress') {
-        userInProgressCount[story.assignedUserId] = (userInProgressCount[story.assignedUserId] || 0) + 1;
+        userInProgressCount[story.assignedUser.id] = (userInProgressCount[story.assignedUser.id] || 0) + 1;
       }
       if (story.status === 'Waiting for MR') {
-        userWaitingMRCount[story.assignedUserId] = (userWaitingMRCount[story.assignedUserId] || 0) + 1;
+        userWaitingMRCount[story.assignedUser.id] = (userWaitingMRCount[story.assignedUser.id] || 0) + 1;
       }
     }
   });

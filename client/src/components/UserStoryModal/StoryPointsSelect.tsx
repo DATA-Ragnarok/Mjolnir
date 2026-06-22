@@ -1,6 +1,10 @@
 import React from 'react';
 import { Hash, Zap, Rocket, Flame, Target, Trophy } from 'lucide-react';
 
+const DevilIcon: React.FC<{ size?: number; className?: string }> = ({ size = 18, className = '' }) => (
+  <span style={{ fontSize: size }} className={className}>😈</span>
+);
+
 type StoryPointsSelectProps = {
   value: number;
   onChange: (points: number) => void;
@@ -12,6 +16,7 @@ const POINT_OPTIONS = [
   { value: 5, label: '5 Points', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
   { value: 8, label: '8 Points', icon: Target, color: 'text-purple-500', bg: 'bg-purple-50' },
   { value: 13, label: '13 Points', icon: Trophy, color: 'text-red-500', bg: 'bg-red-50' },
+  { value: 666, label: '666 Points 😈', icon: DevilIcon, color: 'text-red-600', bg: 'bg-red-50' },
 ];
 
 const StoryPointsSelect: React.FC<StoryPointsSelectProps> = ({ value, onChange }) => {

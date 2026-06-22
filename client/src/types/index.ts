@@ -42,13 +42,14 @@ export type UserStory = {
   storyPoints: number;
   featureId: string;
   sprintId?: string;
-  assignedUserId?: string;
+  assignedUser?: User | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type User = {
   _id: string;
+  id?: string;
   googleId: string;
   email: string;
   name: string;

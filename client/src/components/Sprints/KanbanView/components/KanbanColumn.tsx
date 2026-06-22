@@ -19,7 +19,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, onOpenStor
   });
 
   const points = stories.reduce((acc, s) => acc + s.storyPoints, 0);
-
+  
   return (
     <div className="flex-none w-80">
       <div className="flex items-center justify-between mb-4 px-2">
@@ -47,8 +47,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, onOpenStor
               story={story} 
               onClick={() => onOpenStory(story._id)}
               wipWarning={
-                (story.status === 'In Progress' && !!story.assignedUserId && userInProgressCount[story.assignedUserId] > 1) ||
-                (story.status === 'Waiting for MR' && !!story.assignedUserId && userWaitingMRCount[story.assignedUserId] > 1)
+                (story.status === 'In Progress' && !!story.assignedUser && userInProgressCount[story.assignedUser.id] > 1) ||
+                (story.status === 'Waiting for MR' && !!story.assignedUser && userWaitingMRCount[story.assignedUser.id] > 1)
               }
             />
           ))}
