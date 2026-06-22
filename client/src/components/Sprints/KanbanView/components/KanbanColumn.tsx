@@ -47,8 +47,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ status, stories, onOpenStor
               story={story} 
               onClick={() => onOpenStory(story._id)}
               wipWarning={
-                (story.status === 'In Progress' && !!story.assignedUser && userInProgressCount[story.assignedUser._id] > 1) ||
-                (story.status === 'Waiting for MR' && !!story.assignedUser && userWaitingMRCount[story.assignedUser._id] > 1)
+                (story.status === 'In Progress' && !!story.assignedUser && userInProgressCount[story.assignedUser.id] > 1) ||
+                (story.status === 'Waiting for MR' && !!story.assignedUser && userWaitingMRCount[story.assignedUser.id] > 1)
               }
             />
           ))}

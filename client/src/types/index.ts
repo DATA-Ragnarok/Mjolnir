@@ -49,6 +49,7 @@ export type UserStory = {
 
 export type User = {
   _id: string;
+  id?: string;
   googleId: string;
   email: string;
   name: string;
