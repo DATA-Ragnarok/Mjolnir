@@ -14,7 +14,7 @@ import {
   defaultDropAnimationSideEffects 
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
-import { Sprint, UserStory } from '../../../types';
+import { Sprint, UserStory, User } from '../../../types';
 import { UserStoryStatusType } from '../../../constants/status';
 import { userStoryService } from '../../../services/userStoryService';
 import EmptyState from '../../EmptyState';
@@ -187,14 +187,20 @@ const KanbanView: React.FC<KanbanViewProps> = ({
   const userInProgressCount: Record<string, number> = {};
   const userWaitingMRCount: Record<string, number> = {};
 
+  const getUserId = (u?: User | string) => {
+    if (!u) return '';
+    return typeof u === 'string' ? u : (u._id || u.id || '');
+  };
+
   Object.values(localColumns).flat().forEach(story => {
-    if (story.assignedUser) {
-      if (story.status === 'In Progress') {
-        userInProgressCount[story.assignedUser.id] = (userInProgressCount[story.assignedUser.id] || 0) + 1;
-      }
-      if (story.status === 'Waiting for MR') {
-        userWaitingMRCount[story.assignedUser.id] = (userWaitingMRCount[story.assignedUser.id] || 0) + 1;
-      }
+    const uid = getUserId(story.assignedUser as any);
+    if (!uid) return;
+
+    if (story.status === 'In Progress') {
+      userInProgressCount[uid] = (userInProgressCount[uid] || 0) + 1;
+    }
+    if (story.status === 'Waiting for MR') {
+      userWaitingMRCount[uid] = (userWaitingMRCount[uid] || 0) + 1;
     }
   });
 

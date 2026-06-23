@@ -27,7 +27,12 @@ export const useUserStoryForm = ({
   const [storyPoints, setStoryPoints] = useState<number>(userStory?.storyPoints || 1);
   const [featureId, setFeatureId] = useState(userStory?.featureId || initialFeatureId || '');
   const [sprintId, setSprintId] = useState(userStory?.sprintId || initialSprintId || '');
-  const [assignedUser, setAssignedUser] = useState(userStory?.assignedUser  || '');
+  // assignedUser can be either a user id string (from select) or a populated User object
+  // Keep assignedUser in the form as a user id string for consistency when submitting
+  const [assignedUser, setAssignedUser] = useState<string>(() => {
+    if (!userStory?.assignedUser) return '';
+    return typeof userStory.assignedUser === 'string' ? userStory.assignedUser : (userStory.assignedUser as any)._id || (userStory.assignedUser as any).id || '';
+  });
   
   const [users, setUsers] = useState<User[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);

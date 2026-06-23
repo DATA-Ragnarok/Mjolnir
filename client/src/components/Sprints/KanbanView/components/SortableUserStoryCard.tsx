@@ -54,7 +54,7 @@ const SortableUserStoryCard: React.FC<SortableUserStoryCardProps> = ({ story, on
          </div>
          {story.assignedUser && (
            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] border border-white shadow-sm">
-             {getInitialsFromName(story.assignedUser.name)}
+             {getInitialsFromName(typeof story.assignedUser === 'string' ? (story.assignedUser as string) : (story.assignedUser as any)?.name)}
            </div>
          )}
       </div>

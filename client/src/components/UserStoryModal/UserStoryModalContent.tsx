@@ -162,13 +162,13 @@ const UserStoryModalContent: React.FC<UserStoryModalContentProps> = ({
                   <div className="relative">
                     <select
                       id="assignedUser"
-                      value={assignedUser.name}
+                      value={assignedUser}
                       onChange={(e) => setAssignedUser(e.target.value)}
                       className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none transition-all cursor-pointer"
                     >
                       <option value="">Unassigned</option>
                       {users.map(user => (
-                        <option key={user.id} value={user.name}>{user.name}</option>
+                        <option key={user._id} value={user._id}>{user.name}</option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">

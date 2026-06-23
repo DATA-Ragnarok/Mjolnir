@@ -58,7 +58,7 @@ const StoryListRow: React.FC<StoryListRowProps> = ({ story, onClick }) => {
       <div className="flex items-center space-x-4">
          {story.assignedUser && (
            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs border-2 border-white shadow-sm">
-             {getInitialsFromName(story.assignedUser.name)}
+             {getInitialsFromName(typeof story.assignedUser === 'string' ? (story.assignedUser as string) : (story.assignedUser as any)?.name)}
            </div>
          )}
       </div>

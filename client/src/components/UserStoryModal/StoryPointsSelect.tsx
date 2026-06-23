@@ -42,7 +42,7 @@ const StoryPointsSelect: React.FC<StoryPointsSelectProps> = ({ value, onChange }
           ))}
         </select>
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          {React.createElement(currentOption.icon, { 
+          {React.createElement(currentOption.icon as React.ComponentType<any>, { 
             size: 18, 
             className: currentOption.color 
           })}
