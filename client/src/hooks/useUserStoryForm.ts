@@ -27,7 +27,7 @@ export const useUserStoryForm = ({
   const [storyPoints, setStoryPoints] = useState<number>(userStory?.storyPoints || 1);
   const [featureId, setFeatureId] = useState(userStory?.featureId || initialFeatureId || '');
   const [sprintId, setSprintId] = useState(userStory?.sprintId || initialSprintId || '');
-  const [assignedUserId, setAssignedUserId] = useState(userStory?.assignedUser?.id || '');
+  const [assignedUser, setAssignedUser] = useState(userStory?.assignedUser  || '');
   
   const [users, setUsers] = useState<User[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -76,8 +76,8 @@ export const useUserStoryForm = ({
                   storyPoints !== (userStory?.storyPoints || 0) ||
                   featureId !== (userStory?.featureId || initialFeatureId || '') ||
                   sprintId !== (userStory?.sprintId || initialSprintId || '') ||
-                  assignedUserId !== (userStory?.assignedUser?.id || '');
-
+                  assignedUser !== (userStory?.assignedUser || null);
+  
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!title.trim() || !featureId) {
@@ -88,7 +88,6 @@ export const useUserStoryForm = ({
     setIsSubmitting(true);
     setError(null);
     try {
-      const assignedUser = assignedUserId ? users.find(u => u._id === assignedUserId) : null;
       const data = { 
         title, 
         description, 
@@ -153,8 +152,8 @@ export const useUserStoryForm = ({
     setFeatureId,
     sprintId,
     setSprintId,
-    assignedUserId,
-    setAssignedUserId,
+    assignedUser,
+    setAssignedUser,
     users,
     sprints,
     features,

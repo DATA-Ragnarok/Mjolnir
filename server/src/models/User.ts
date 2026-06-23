@@ -16,6 +16,7 @@ const UserSchema: Schema = new Schema({
   isAdmin: { type: Boolean, default: false },
 }, { timestamps: true });
 
+// TODO: fix this shitty thing
 // Add virtual property 'id' that maps to '_id' for cleaner API
 UserSchema.virtual('id').get(function(this: any) {
   return this._id.toString();

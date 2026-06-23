@@ -42,7 +42,7 @@ export type UserStory = {
   storyPoints: number;
   featureId: string;
   sprintId?: string;
-  assignedUser?: User | null;
+  assignedUser?: User;
   createdAt: string;
   updatedAt: string;
 };
