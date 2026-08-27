@@ -11,6 +11,7 @@ import userRoutes from './routes/userRoutes.js';
 import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import openApiRoutes from './routes/openApiRoutes.js';
+import mcpRoutes from './routes/mcpRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
@@ -27,6 +28,13 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Remote MCP Server Routes (for Gemini Web Custom Connected Apps & Claude Web)
+app.use('/api/mcp', mcpRoutes);
+app.use('/mcp', mcpRoutes);
+
+// Top-level /sse endpoint alias
+app.use('/sse', mcpRoutes);
 
 // OpenAPI Spec Routes
 app.use('/api', openApiRoutes);

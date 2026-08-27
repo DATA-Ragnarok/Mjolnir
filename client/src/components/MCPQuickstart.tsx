@@ -13,6 +13,7 @@ const MCPQuickstart: React.FC = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const rawApiUrl = (import.meta.env.VITE_API_URL || 'https://api.mjolnir.dev').replace(/\/+$/, '');
+  const mcpSseUrl = `${rawApiUrl}/mcp/sse`;
   const openApiJsonUrl = `${rawApiUrl}/openapi.json`;
   const openApiYamlUrl = `${rawApiUrl}/openapi.yaml`;
 
@@ -145,17 +146,50 @@ Use your Mjolnir tools to:
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
             <h3 className="text-lg font-bold text-blue-950 flex items-center gap-2 mb-2">
               <Sparkles className="w-5 h-5 text-blue-600" />
-              Gemini Web Custom Gem Setup
+              Gemini Web Integration (Connected App & Custom Gem)
             </h3>
             <p className="text-sm text-blue-900 mb-4 leading-relaxed">
-              Connect Google Gemini (Gemini Advanced / Gemini for Workspace) to Mjolnir by creating a custom <strong>Gem</strong> using the OpenAPI 3.0 specification.
+              Google Gemini connects to Mjolnir via <strong>Custom Connected App (Remote MCP)</strong> or <strong>Custom Gems (OpenAPI)</strong>.
             </p>
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-blue-900 uppercase tracking-wider mb-1">
-                  OpenAPI 3.0 Specification URL (Import into Gem Tools):
-                </label>
+            <div className="space-y-4">
+              {/* Option A: Custom Connected App (MCP URL) */}
+              <div className="bg-white/80 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                    ⚡ Remote MCP Server URL (For "Custom connected app"):
+                  </label>
+                  <span className="text-[11px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-medium">
+                    Recommended for Connected Apps
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mb-2">
+                  Paste this URL into Gemini's <em>"Add a custom app link"</em> field:
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={mcpSseUrl}
+                    className="flex-1 bg-white border border-blue-300 text-blue-950 px-3 py-2 rounded-md font-mono text-sm"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(mcpSseUrl, 'gemini-mcp-url')}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                  >
+                    {copiedKey === 'gemini-mcp-url' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copiedKey === 'gemini-mcp-url' ? 'Copied' : 'Copy MCP URL'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Option B: OpenAPI URL */}
+              <div className="bg-white/80 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider">
+                    📄 OpenAPI 3.0 Specification URL (For Custom Gems & Actions):
+                  </label>
+                </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -176,27 +210,26 @@ Use your Mjolnir tools to:
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h4 className="font-semibold text-gray-900 mb-3">Step-by-Step Instructions for Gemini:</h4>
-            <ol className="space-y-3 text-sm text-gray-700 list-decimal list-inside">
-              <li>
-                Generate an API key in the section above and copy the secret <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800">sk_live_...</code>.
-              </li>
-              <li>
-                Open <strong>Gemini</strong> (gemini.google.com) and click <strong>Gem Manager → New Gem</strong>.
-              </li>
-              <li>
-                Name your Gem (e.g. <em>"Mjolnir PM Assistant"</em>) and add instructions.
-              </li>
-              <li>
-                Under <strong>Custom Actions / Tools</strong>, paste the <strong>OpenAPI Specification URL</strong> from above.
-              </li>
-              <li>
-                Set Authentication to <strong>API Key</strong>, Header Name: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800">x-api-key</code>, and paste your key.
-              </li>
-              <li>
-                Click <strong>Save Gem</strong>. Your Gemini Web Gem is now fully equipped to query epics, create tasks, and manage Mjolnir boards in real-time!
-              </li>
-            </ol>
+            <h4 className="font-semibold text-gray-900 mb-3">How to Connect to Gemini:</h4>
+            <div className="space-y-4">
+              <div className="border-l-4 border-indigo-500 pl-3">
+                <p className="text-sm font-bold text-gray-900">Method 1: Custom Connected App (Settings → Connected Apps)</p>
+                <ol className="mt-1 space-y-1 text-sm text-gray-600 list-decimal list-inside">
+                  <li>In Gemini, go to <strong>Settings → Connected Apps → Add custom connected app</strong>.</li>
+                  <li>In the <strong>"Add a custom app link"</strong> input, paste: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono text-xs">{mcpSseUrl}</code>.</li>
+                  <li>Click <strong>Next / Save</strong>. Gemini will connect to Mjolnir's live MCP Server!</li>
+                </ol>
+              </div>
+
+              <div className="border-l-4 border-blue-500 pl-3">
+                <p className="text-sm font-bold text-gray-900">Method 2: Custom Gem (Gem Manager)</p>
+                <ol className="mt-1 space-y-1 text-sm text-gray-600 list-decimal list-inside">
+                  <li>Open <strong>Gem Manager → New Gem</strong> and name it (e.g. <em>"Mjolnir Assistant"</em>).</li>
+                  <li>Under <strong>Custom Actions / Tools</strong>, paste the <strong>OpenAPI URL</strong> above.</li>
+                  <li>Set Auth Header: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono text-xs">x-api-key: YOUR_API_KEY</code> and save.</li>
+                </ol>
+              </div>
+            </div>
           </div>
 
           <div>
