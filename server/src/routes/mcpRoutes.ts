@@ -1,8 +1,18 @@
 import { Router, Request, Response } from 'express';
+import cors from 'cors';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { McpServerService } from '../services/McpServerService.js';
 
 const router = Router();
+
+// Enable permissive CORS for all MCP endpoints so Gemini Web & Claude Web can connect from any origin
+router.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Accept', 'Cache-Control'],
+  })
+);
 
 // Map of active SSE transports by sessionId
 const transports = new Map<string, SSEServerTransport>();
@@ -20,6 +30,12 @@ const extractApiKey = (req: Request): string | null => {
   return null;
 };
 
+const getAbsoluteMessageEndpoint = (req: Request): string => {
+  const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const host = (req.headers['x-forwarded-host'] as string) || req.get('host') || 'mjolnir-dev-server.onrender.com';
+  return `${protocol}://${host}/api/mcp/messages`;
+};
+
 // SSE Handler
 const handleSseConnection = async (req: Request, res: Response) => {
   const apiKey = extractApiKey(req);
@@ -27,12 +43,13 @@ const handleSseConnection = async (req: Request, res: Response) => {
 
   // Set SSE response headers
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering (Nginx / Cloudflare)
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  // Mount endpoint path for client messages
-  const messageEndpoint = '/api/mcp/messages';
+  // Provide full absolute endpoint URL for external cloud clients (Gemini Web, Claude Web)
+  const messageEndpoint = getAbsoluteMessageEndpoint(req);
   const transport = new SSEServerTransport(messageEndpoint, res);
 
   transports.set(transport.sessionId, transport);
@@ -58,15 +75,17 @@ router.get('/', (req: Request, res: Response) => {
     return handleSseConnection(req, res);
   }
 
-  // If queried by HTTP probe, return MCP server descriptor
+  // Return MCP server descriptor for discovery
+  const baseUrl = `${(req.headers['x-forwarded-proto'] as string) || req.protocol || 'https'}://${(req.headers['x-forwarded-host'] as string) || req.get('host') || 'mjolnir-dev-server.onrender.com'}`;
   res.json({
     name: 'Mjolnir Remote MCP Server',
     status: 'online',
     version: '1.0.0',
+    protocolVersion: '2024-11-05',
     transport: 'sse',
     endpoints: {
-      sse: '/api/mcp/sse',
-      messages: '/api/mcp/messages',
+      sse: `${baseUrl}/api/mcp/sse`,
+      messages: `${baseUrl}/api/mcp/messages`,
     },
     tools: [
       'mjolnir_list_epics',
