@@ -18,10 +18,21 @@ import { SprintService } from './services/SprintService.js';
 export const app = express();
 
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: (origin, callback) => {
+    // Allow any origin (including Gemini Web, Claude Web, local frontend, tools)
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-api-key',
+    'Accept',
+    'Cache-Control',
+    'X-Requested-With',
+    'X-Accel-Buffering',
+  ],
 }));
 app.use(express.json());
 
