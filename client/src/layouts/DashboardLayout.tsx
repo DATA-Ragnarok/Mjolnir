@@ -9,7 +9,8 @@ const DashboardLayout: React.FC = () => {
   const tabs = [
     { name: 'Epics', path: '/epics' },
     { name: 'Features', path: '/features' },
-    { name: 'Sprints', path: '/sprints' }
+    { name: 'Sprints', path: '/sprints' },
+    { name: 'Developer Settings', path: '/settings/developer' },
   ];
 
   const isActive = (path: string) => {

@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import EpicsPage from './pages/EpicsPage'
 import FeaturesPage from './pages/FeaturesPage'
 import SprintsPage from './pages/SprintsPage'
+import DeveloperSettingsPage from './pages/DeveloperSettingsPage'
 import DashboardLayout from './layouts/DashboardLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -38,6 +39,7 @@ function App() {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/features/:featureId" element={<FeaturesPage />} />
         <Route path="/sprints" element={<SprintsPage />} />
+        <Route path="/settings/developer" element={<DeveloperSettingsPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/epics" replace />} />

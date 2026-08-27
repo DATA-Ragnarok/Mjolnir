@@ -1,8 +1,22 @@
 import UserStory, { UserStory as UserStoryType } from '../models/UserStory.js';
 
 export class UserStoryDAL {
-  static async find(filters: any = {}) {
-    return await UserStory.find(filters).populate('assignedUser');
+  static async find(
+    filters: any = {},
+    select: any = null,
+    options: { limit?: number; sort?: any } = {}
+  ) {
+    let query = UserStory.find(filters);
+    if (select) {
+      query = query.select(select);
+    }
+    if (options.sort) {
+      query = query.sort(options.sort);
+    }
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    return await query.populate('assignedUser');
   }
 
   static async findById(id: string) {

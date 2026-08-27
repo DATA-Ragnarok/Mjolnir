@@ -3,8 +3,12 @@ import Feature, { Feature as FeatureType } from '../models/Feature.js';
 import { Status } from '../models/Epic.js';
 
 export class FeatureDAL {
-  static async find(filters: any = {}) {
-    return await Feature.find(filters);
+  static async find(filters: any = {}, select: any = null) {
+    let query = Feature.find(filters);
+    if (select) {
+      query = query.select(select);
+    }
+    return await query;
   }
 
   static async findWithProgress(filters: { epicId?: string } = {}) {

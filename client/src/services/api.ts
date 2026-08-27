@@ -8,10 +8,10 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to attach JWT from cookies
+// Request interceptor to attach JWT from cookies or localStorage
 api.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('token');
+    const token = Cookies.get('token') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,9 +27,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      Cookies.remove('token');
-      // Use window.location to force a reload and redirect to login if necessary
-      // or handle this via AuthContext by updating state
+      Cookies.remove('token', { path: '/' });
+      try {
+        localStorage.removeItem('token');
+      } catch (e) {
+        // ignore
+      }
     }
     return Promise.reject(error);
   }

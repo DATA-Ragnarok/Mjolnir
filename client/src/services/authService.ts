@@ -22,18 +22,37 @@ export const authService = {
     const response = await api.post<AuthResponse>('/auth/google', { idToken });
     const { token, user } = response.data;
     
-    // Set cookie with 7 days expiration, secure and sameSite flags
-    Cookies.set(TOKEN_NAME, token, { expires: 7, secure: true, sameSite: 'Lax' });
+    // Set cookie with 7 days expiration, path: '/', sameSite: 'Lax'
+    Cookies.set(TOKEN_NAME, token, {
+      expires: 7,
+      path: '/',
+      sameSite: 'Lax',
+    });
+    try {
+      localStorage.setItem(TOKEN_NAME, token);
+    } catch (e) {
+      // ignore
+    }
     
     return { token, user };
   },
 
-  logout: () => {
-    Cookies.remove(TOKEN_NAME);
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (err) {
+      // ignore
+    }
+    Cookies.remove(TOKEN_NAME, { path: '/' });
+    try {
+      localStorage.removeItem(TOKEN_NAME);
+    } catch (e) {
+      // ignore
+    }
   },
 
   getToken: () => {
-    return Cookies.get(TOKEN_NAME);
+    return Cookies.get(TOKEN_NAME) || localStorage.getItem(TOKEN_NAME) || null;
   },
 
   getCurrentUser: async (): Promise<User> => {

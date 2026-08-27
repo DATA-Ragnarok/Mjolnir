@@ -56,7 +56,16 @@ export const googleAuth = asyncHandler(async (req: Request, res: Response) => {
     });
   }
 
-  const token = jwt.sign({ userId: user._id }, config.jwtSecret, { expiresIn: '7d' });
+  const token = jwt.sign({ userId: user._id }, config.jwtSecret as string, { expiresIn: '7d' });
+
+  // Set cookie for auth token and return token + user object
+  res.cookie('token', token, {
+    httpOnly: false,
+    secure: process.env['NODE_ENV'] === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/',
+  });
 
   res.json({ token, user });
 });
@@ -66,4 +75,10 @@ export const getCurrentUser = asyncHandler(async (req: Request, res: Response) =
     throw new AppError(401, 'Unauthorized');
   }
   res.json(req.user);
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  // Clear auth cookie
+  res.clearCookie('token', { path: '/' });
+  res.json({ ok: true });
 });

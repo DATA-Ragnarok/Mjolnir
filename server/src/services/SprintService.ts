@@ -7,6 +7,14 @@ export class SprintService {
     return await SprintDAL.findAll();
   }
 
+  static async getCurrentSprint() {
+    const now = new Date();
+    return await SprintDAL.findOne({
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    });
+  }
+
   static async create(data: Partial<SprintType>) {
     return await SprintDAL.create(data);
   }

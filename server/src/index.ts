@@ -8,6 +8,8 @@ import userStoryRoutes from './routes/userStoryRoutes.js';
 import sprintRoutes from './routes/sprintRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import apiKeyRoutes from './routes/apiKeyRoutes.js';
+import agentRoutes from './routes/agentRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
@@ -17,7 +19,7 @@ app.use(cors({
   origin: config.frontendUrl,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
 }));
 app.use(express.json());
 
@@ -32,6 +34,8 @@ app.use('/api/user-stories', userStoryRoutes);
 app.use('/api/sprints', sprintRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/keys', apiKeyRoutes);
+app.use('/api/agent/tasks', agentRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
