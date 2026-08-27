@@ -28,14 +28,14 @@ export class ApiKeyService {
     const prefix = this.extractPrefix(rawKey);
 
     const validScopes = (scopes as any).filter((s: string) => 
-      ['read:tasks', 'write:tasks', 'read:features'].includes(s)
+      ['read:tasks', 'write:tasks', 'read:features', 'read:epics'].includes(s)
     );
 
     const apiKey = await ApiKeyDAL.create({
       name,
       keyHash,
       prefix,
-      scopes: validScopes.length > 0 ? validScopes : ['read:tasks'],
+      scopes: validScopes.length > 0 ? validScopes : ['read:tasks', 'read:features', 'read:epics', 'write:tasks'],
       isActive: true,
       createdByUserId: userId as any,
     });

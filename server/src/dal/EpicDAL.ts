@@ -1,6 +1,14 @@
 import Epic, { Epic as EpicType, Status } from '../models/Epic.js';
 
 export class EpicDAL {
+  static async find(filters: any = {}, select: any = null) {
+    let query = Epic.find(filters);
+    if (select) {
+      query = query.select(select);
+    }
+    return await query;
+  }
+
   static async findAll() {
     return await Epic.find();
   }

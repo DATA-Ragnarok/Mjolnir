@@ -32,7 +32,7 @@ const GenerateKeyModal: React.FC<GenerateKeyModalProps> = ({ onSuccess }) => {
       setError(null);
       const response = await api.post('/keys', {
         name: keyName.trim(),
-        scopes: ['read:tasks', 'write:tasks', 'read:features'],
+        scopes: ['read:tasks', 'write:tasks', 'read:features', 'read:epics'],
       });
       setGeneratedKey(response.data);
     } catch (err: any) {
@@ -142,7 +142,7 @@ const GenerateKeyModal: React.FC<GenerateKeyModalProps> = ({ onSuccess }) => {
           <input
             id="keyName"
             type="text"
-            placeholder="e.g., Cursor MCP, Local Agent, CI/CD"
+            placeholder="e.g., Gemini Custom Gem, Claude Web, Cursor, CI/CD"
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -157,15 +157,19 @@ const GenerateKeyModal: React.FC<GenerateKeyModalProps> = ({ onSuccess }) => {
           <ul className="space-y-1 text-sm text-gray-600">
             <li className="flex items-center gap-2">
               <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full" />
+              read:epics
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full" />
+              read:features
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full" />
               read:tasks
             </li>
             <li className="flex items-center gap-2">
               <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full" />
               write:tasks
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full" />
-              read:features
             </li>
           </ul>
         </div>

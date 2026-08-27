@@ -4,7 +4,7 @@ export type ApiKey = Document & {
   name: string;
   keyHash: string;
   prefix: string;
-  scopes: ('read:tasks' | 'write:tasks' | 'read:features')[];
+  scopes: ('read:tasks' | 'write:tasks' | 'read:features' | 'read:epics')[];
   isActive: boolean;
   createdByUserId: mongoose.Types.ObjectId;
   lastUsedAt?: Date;
@@ -17,8 +17,8 @@ const ApiKeySchema: Schema = new Schema(
     keyHash: { type: String, required: true, unique: true },
     prefix: { type: String, required: true, index: true },
     scopes: {
-      type: [{ type: String, enum: ['read:tasks', 'write:tasks', 'read:features'] }],
-      default: ['read:tasks'],
+      type: [{ type: String, enum: ['read:tasks', 'write:tasks', 'read:features', 'read:epics'] }],
+      default: ['read:tasks', 'read:features', 'read:epics', 'write:tasks'],
     },
     isActive: { type: Boolean, default: true },
     createdByUserId: {

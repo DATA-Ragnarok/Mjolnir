@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
+import openApiRoutes from './routes/openApiRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
@@ -18,7 +19,7 @@ export const app = express();
 app.use(cors({
   origin: config.frontendUrl,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
 }));
 app.use(express.json());
@@ -26,6 +27,9 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// OpenAPI Spec Routes
+app.use('/api', openApiRoutes);
 
 // Routes
 app.use('/api/epics', epicRoutes);

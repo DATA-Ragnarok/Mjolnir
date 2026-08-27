@@ -1,8 +1,40 @@
 import { Request, Response } from 'express';
 import { UserStoryDAL } from '../dal/UserStoryDAL.js';
 import { FeatureDAL } from '../dal/FeatureDAL.js';
+import { EpicDAL } from '../dal/EpicDAL.js';
 import { SprintService } from '../services/SprintService.js';
+import { UserStoryService } from '../services/UserStoryService.js';
+import { UserStoryStatus } from '../models/UserStory.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+
+export const listEpics = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.apiKey) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const epics = await EpicDAL.find(
+    {},
+    {
+      _id: 1,
+      title: 1,
+      description: 1,
+      status: 1,
+      createdAt: 1,
+      updatedAt: 1,
+    }
+  );
+
+  const sanitized = epics.map((epic: any) => ({
+    _id: epic._id,
+    title: epic.title,
+    description: epic.description,
+    status: epic.status,
+    createdAt: epic.createdAt,
+    updatedAt: epic.updatedAt,
+  }));
+
+  res.json(sanitized);
+});
 
 export const listUserStories = asyncHandler(async (req: Request, res: Response) => {
   if (!req.apiKey) {
@@ -104,6 +136,42 @@ export const createUserStory = asyncHandler(async (req: Request, res: Response) 
     status: (populated as any).status,
     storyPoints: (populated as any).storyPoints,
     createdAt: (populated as any).createdAt,
+  });
+});
+
+export const updateUserStoryStatus = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.apiKey) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const validStatuses: UserStoryStatus[] = [
+    'To Do',
+    'In Progress',
+    'Blocked',
+    'Waiting for MR',
+    'Done',
+  ];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({
+      message: `Invalid: status must be one of: ${validStatuses.join(', ')}`,
+    });
+  }
+
+  const updatedStory = await UserStoryService.update(id as string, { status });
+  if (!updatedStory) {
+    return res.status(404).json({ message: 'User story not found' });
+  }
+
+  res.json({
+    _id: (updatedStory as any)._id,
+    title: (updatedStory as any).title,
+    description: (updatedStory as any).description,
+    status: (updatedStory as any).status,
+    storyPoints: (updatedStory as any).storyPoints,
+    updatedAt: (updatedStory as any).updatedAt,
   });
 });
 
