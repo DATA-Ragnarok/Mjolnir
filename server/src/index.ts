@@ -12,6 +12,7 @@ import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import openApiRoutes from './routes/openApiRoutes.js';
 import mcpRoutes from './routes/mcpRoutes.js';
+import oauthRoutes from './routes/oauthRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
@@ -35,6 +36,7 @@ app.use(cors({
   ],
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
@@ -65,6 +67,10 @@ app.get('/', (req, res) => {
     health: `${baseUrl}/health`,
   });
 });
+
+// OAuth 2.0 Discovery & Endpoints (for Claude & Gemini Dynamic Client Registration)
+app.use('/', oauthRoutes);
+app.use('/api', oauthRoutes);
 
 // Remote MCP Server Routes (mounted at /api/mcp, /mcp, /sse, /api/sse, /messages, /api/messages)
 app.use('/api/mcp', mcpRoutes);
