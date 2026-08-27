@@ -40,17 +40,51 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Remote MCP Server Routes (for Gemini Web Custom Connected Apps & Claude Web)
+// Root endpoint handler: returns status & endpoints descriptor
+app.get('/', (req, res) => {
+  const acceptHeader = req.headers.accept || '';
+  if (acceptHeader.includes('text/event-stream')) {
+    return (mcpRoutes as any)(req, res);
+  }
+  const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const host = (req.headers['x-forwarded-host'] as string) || req.get('host') || 'mjolnir-dev-server.onrender.com';
+  const baseUrl = `${protocol}://${host}`;
+
+  res.json({
+    name: 'Mjolnir Remote MCP Server & Agent API',
+    status: 'online',
+    version: '1.0.0',
+    mcp: {
+      sse: `${baseUrl}/api/mcp/sse`,
+      messages: `${baseUrl}/api/mcp/messages`,
+    },
+    openapi: {
+      json: `${baseUrl}/api/openapi.json`,
+      yaml: `${baseUrl}/api/openapi.yaml`,
+    },
+    health: `${baseUrl}/health`,
+  });
+});
+
+// Remote MCP Server Routes (mounted at /api/mcp, /mcp, /sse, /api/sse, /messages, /api/messages)
 app.use('/api/mcp', mcpRoutes);
 app.use('/mcp', mcpRoutes);
-
-// Top-level /sse endpoint alias
 app.use('/sse', mcpRoutes);
+app.use('/api/sse', mcpRoutes);
+app.use('/messages', mcpRoutes);
+app.use('/api/messages', mcpRoutes);
 
-// OpenAPI Spec Routes
+// OpenAPI Spec Routes (mounted at root and /api)
 app.use('/api', openApiRoutes);
+app.use('/', openApiRoutes);
 
-// Routes
+// Agent Routes (mounted with and without /api prefix)
+app.use('/api/agent/tasks', agentRoutes);
+app.use('/agent/tasks', agentRoutes);
+app.use('/api/agent', agentRoutes);
+app.use('/agent', agentRoutes);
+
+// Standard App Routes
 app.use('/api/epics', epicRoutes);
 app.use('/api/features', featureRoutes);
 app.use('/api/user-stories', userStoryRoutes);
@@ -58,7 +92,6 @@ app.use('/api/sprints', sprintRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/keys', apiKeyRoutes);
-app.use('/api/agent/tasks', agentRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

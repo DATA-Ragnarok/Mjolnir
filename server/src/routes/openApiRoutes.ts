@@ -3,38 +3,27 @@ import { OpenApiService } from '../services/OpenApiService.js';
 
 const router = Router();
 
-// GET /api/openapi.json
-router.get('/openapi.json', (req: Request, res: Response) => {
-  const protocol = req.protocol;
-  const host = req.get('host') || 'localhost:5001';
-  const serverUrl = `${protocol}://${host}/api`;
-  
-  const spec = OpenApiService.getSpec(serverUrl);
+const getBaseServerUrl = (req: Request): string => {
+  const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const host = (req.headers['x-forwarded-host'] as string) || req.get('host') || 'mjolnir-dev-server.onrender.com';
+  return `${protocol}://${host}`;
+};
+
+// GET /openapi.json and /api/openapi.json
+router.get(['/openapi.json', '/openapi'], (req: Request, res: Response) => {
+  const baseUrl = getBaseServerUrl(req);
+  const spec = OpenApiService.getSpec(baseUrl);
   res.setHeader('Content-Type', 'application/json');
   res.json(spec);
 });
 
-// GET /api/openapi.yaml
-router.get('/openapi.yaml', (req: Request, res: Response) => {
-  const protocol = req.protocol;
-  const host = req.get('host') || 'localhost:5001';
-  const serverUrl = `${protocol}://${host}/api`;
-
-  const spec = OpenApiService.getSpec(serverUrl);
+// GET /openapi.yaml and /api/openapi.yaml
+router.get(['/openapi.yaml', '/openapi.yml'], (req: Request, res: Response) => {
+  const baseUrl = getBaseServerUrl(req);
+  const spec = OpenApiService.getSpec(baseUrl);
   const yaml = OpenApiService.toYaml(spec);
   res.setHeader('Content-Type', 'text/yaml');
   res.send(yaml);
-});
-
-// GET /api/openapi (alias for JSON)
-router.get('/openapi', (req: Request, res: Response) => {
-  const protocol = req.protocol;
-  const host = req.get('host') || 'localhost:5001';
-  const serverUrl = `${protocol}://${host}/api`;
-
-  const spec = OpenApiService.getSpec(serverUrl);
-  res.setHeader('Content-Type', 'application/json');
-  res.json(spec);
 });
 
 export default router;
