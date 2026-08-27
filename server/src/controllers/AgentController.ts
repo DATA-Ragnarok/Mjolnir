@@ -62,6 +62,7 @@ export const listUserStories = asyncHandler(async (req: Request, res: Response) 
       createdAt: 1,
       tags: 1,
       priority: 1,
+      assignedUser: 1,
     },
     {
       limit: numLimit,
@@ -78,6 +79,7 @@ export const listUserStories = asyncHandler(async (req: Request, res: Response) 
     priority: story.priority,
     tags: story.tags,
     createdAt: story.createdAt,
+    assignedUser: story.assignedUser,
   }));
 
   res.json(sanitized);
