@@ -7,6 +7,14 @@ export class SprintService {
     return await SprintDAL.findAll();
   }
 
+  static async getActiveSprint() {
+    return await SprintDAL.findActive();
+  }
+
+  static async getById(id: string) {
+    return await SprintDAL.findById(id);
+  }
+
   static async create(data: Partial<SprintType>) {
     return await SprintDAL.create(data);
   }

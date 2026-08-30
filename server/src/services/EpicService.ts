@@ -6,6 +6,10 @@ export class EpicService {
     return await EpicDAL.findAllWithProgress();
   }
 
+  static async getById(id: string) {
+    return await EpicDAL.findById(id);
+  }
+
   static async create(data: Partial<EpicType>) {
     return await EpicDAL.create(data);
   }
