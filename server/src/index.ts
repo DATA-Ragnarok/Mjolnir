@@ -7,9 +7,10 @@ import featureRoutes from './routes/featureRoutes.js';
 import userStoryRoutes from './routes/userStoryRoutes.js';
 import sprintRoutes from './routes/sprintRoutes.js';
 import authRoutes from './routes/authRoutes.js';
-import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
+import mcpRoutes from './routes/mcpRoutes.js';
+import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
@@ -36,6 +37,7 @@ app.use('/api/auth/api-key', apiKeyRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/mcp', mcpRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
