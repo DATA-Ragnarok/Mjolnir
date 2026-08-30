@@ -42,10 +42,10 @@ const StoryPointsSelect: React.FC<StoryPointsSelectProps> = ({ value, onChange }
           ))}
         </select>
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          {React.createElement(currentOption.icon, { 
-            size: 18, 
-            className: currentOption.color 
-          })}
+          {(() => {
+            const Icon = currentOption.icon as any;
+            return <Icon size={18} className={currentOption.color} />;
+          })()}
         </div>
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
