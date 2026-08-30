@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { UserStoryDAL } from '../dal/UserStoryDAL.js';
 import { FeatureDAL } from '../dal/FeatureDAL.js';
 import { EpicDAL } from '../dal/EpicDAL.js';
 import { SprintService } from '../services/SprintService.js';
 import { UserStoryService } from '../services/UserStoryService.js';
-import { UserStoryStatus } from '../models/UserStory.js';
+import UserStory, { UserStoryStatus } from '../models/UserStory.js';
+import User from '../models/User.js';
+import Sprint from '../models/Sprint.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 export const listEpics = asyncHandler(async (req: Request, res: Response) => {
@@ -41,34 +44,57 @@ export const listUserStories = asyncHandler(async (req: Request, res: Response) 
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  const { status, limit = 50, sortBy = 'createdAt' } = req.query;
+  const { status, limit = 50, sortBy = 'createdAt', sprintId, sprint, assignedUser, featureId } = req.query;
 
   const query: any = {};
   if (status && typeof status === 'string') {
     query.status = status;
   }
+  if (featureId && typeof featureId === 'string') {
+    query.featureId = featureId;
+  }
+  if (sprintId && typeof sprintId === 'string') {
+    query.sprintId = sprintId;
+  } else if (sprint && typeof sprint === 'string') {
+    const sprintVal = sprint.trim();
+    if (mongoose.Types.ObjectId.isValid(sprintVal)) {
+      query.sprintId = sprintVal;
+    } else {
+      const matchingSprints = await Sprint.find({
+        name: { $regex: sprintVal, $options: 'i' },
+      });
+      const sprintIds = matchingSprints.map((s) => s._id);
+      query.sprintId = { $in: sprintIds };
+    }
+  }
+
+  if (assignedUser && typeof assignedUser === 'string') {
+    const userVal = assignedUser.trim();
+    if (userVal.toLowerCase() === 'me') {
+      query.assignedUser = req.apiKey.createdByUserId;
+    } else if (mongoose.Types.ObjectId.isValid(userVal)) {
+      query.assignedUser = userVal;
+    } else {
+      const matchingUsers = await User.find({
+        $or: [
+          { name: { $regex: userVal, $options: 'i' } },
+          { email: { $regex: userVal, $options: 'i' } },
+        ],
+      });
+      const userIds = matchingUsers.map((u) => u._id);
+      query.assignedUser = { $in: userIds };
+    }
+  }
 
   const numLimit = Math.min(parseInt(limit as string) || 50, 500);
   const sortField = (sortBy as string) || 'createdAt';
-  
-  const stories = await UserStoryDAL.find(
-    query,
-    {
-      _id: 1,
-      title: 1,
-      description: 1,
-      status: 1,
-      storyPoints: 1,
-      createdAt: 1,
-      tags: 1,
-      priority: 1,
-      assignedUser: 1,
-    },
-    {
-      limit: numLimit,
-      sort: { [sortField]: -1 },
-    }
-  );
+
+  const stories = await UserStory.find(query)
+    .populate('assignedUser')
+    .populate('sprintId')
+    .populate('featureId')
+    .limit(numLimit)
+    .sort({ [sortField]: -1 });
 
   const sanitized = stories.map((story: any) => ({
     _id: story._id,
@@ -78,8 +104,33 @@ export const listUserStories = asyncHandler(async (req: Request, res: Response) 
     storyPoints: story.storyPoints,
     priority: story.priority,
     tags: story.tags,
+    assignedUser: story.assignedUser
+      ? {
+          _id: story.assignedUser._id,
+          name: story.assignedUser.name,
+          email: story.assignedUser.email,
+        }
+      : null,
+    sprint:
+      story.sprintId && typeof story.sprintId === 'object'
+        ? {
+            _id: story.sprintId._id,
+            name: story.sprintId.name,
+            startDate: story.sprintId.startDate,
+            endDate: story.sprintId.endDate,
+          }
+        : null,
+    sprintId: story.sprintId?._id || story.sprintId || null,
+    feature:
+      story.featureId && typeof story.featureId === 'object'
+        ? {
+            _id: story.featureId._id,
+            title: story.featureId.title,
+          }
+        : null,
+    featureId: story.featureId?._id || story.featureId || null,
     createdAt: story.createdAt,
-    assignedUser: story.assignedUser,
+    updatedAt: story.updatedAt,
   }));
 
   res.json(sanitized);
@@ -90,7 +141,7 @@ export const createUserStory = asyncHandler(async (req: Request, res: Response) 
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  const { title, description, storyPoints, featureId } = req.body;
+  const { title, description, storyPoints, featureId, assignedUserId } = req.body;
 
   // Validate required fields
   if (!title || typeof title !== 'string') {
@@ -126,10 +177,13 @@ export const createUserStory = asyncHandler(async (req: Request, res: Response) 
     storyPoints: Number(storyPoints),
     featureId: featureId as any,
     sprintId: currentSprint._id as any,
-    assignedUser: req.apiKey.createdByUserId as any,
+    assignedUser: (assignedUserId || req.apiKey.createdByUserId) as any,
   });
 
-  const populated = await newStory.populate('featureId sprintId assignedUser');
+  const populated = await UserStory.findById(newStory._id)
+    .populate('assignedUser')
+    .populate('sprintId')
+    .populate('featureId');
 
   res.status(201).json({
     _id: (populated as any)._id,
@@ -137,6 +191,29 @@ export const createUserStory = asyncHandler(async (req: Request, res: Response) 
     description: (populated as any).description,
     status: (populated as any).status,
     storyPoints: (populated as any).storyPoints,
+    assignedUser: (populated as any).assignedUser
+      ? {
+          _id: (populated as any).assignedUser._id,
+          name: (populated as any).assignedUser.name,
+          email: (populated as any).assignedUser.email,
+        }
+      : null,
+    sprint: (populated as any).sprintId
+      ? {
+          _id: (populated as any).sprintId._id,
+          name: (populated as any).sprintId.name,
+          startDate: (populated as any).sprintId.startDate,
+          endDate: (populated as any).sprintId.endDate,
+        }
+      : null,
+    sprintId: (populated as any).sprintId?._id || (populated as any).sprintId || null,
+    feature: (populated as any).featureId
+      ? {
+          _id: (populated as any).featureId._id,
+          title: (populated as any).featureId.title,
+        }
+      : null,
+    featureId: (populated as any).featureId?._id || (populated as any).featureId || null,
     createdAt: (populated as any).createdAt,
   });
 });
@@ -167,13 +244,41 @@ export const updateUserStoryStatus = asyncHandler(async (req: Request, res: Resp
     return res.status(404).json({ message: 'User story not found' });
   }
 
+  const populated = await UserStory.findById(updatedStory._id)
+    .populate('assignedUser')
+    .populate('sprintId')
+    .populate('featureId');
+
   res.json({
-    _id: (updatedStory as any)._id,
-    title: (updatedStory as any).title,
-    description: (updatedStory as any).description,
-    status: (updatedStory as any).status,
-    storyPoints: (updatedStory as any).storyPoints,
-    updatedAt: (updatedStory as any).updatedAt,
+    _id: (populated as any)._id,
+    title: (populated as any).title,
+    description: (populated as any).description,
+    status: (populated as any).status,
+    storyPoints: (populated as any).storyPoints,
+    assignedUser: (populated as any).assignedUser
+      ? {
+          _id: (populated as any).assignedUser._id,
+          name: (populated as any).assignedUser.name,
+          email: (populated as any).assignedUser.email,
+        }
+      : null,
+    sprint: (populated as any).sprintId
+      ? {
+          _id: (populated as any).sprintId._id,
+          name: (populated as any).sprintId.name,
+          startDate: (populated as any).sprintId.startDate,
+          endDate: (populated as any).sprintId.endDate,
+        }
+      : null,
+    sprintId: (populated as any).sprintId?._id || (populated as any).sprintId || null,
+    feature: (populated as any).featureId
+      ? {
+          _id: (populated as any).featureId._id,
+          title: (populated as any).featureId.title,
+        }
+      : null,
+    featureId: (populated as any).featureId?._id || (populated as any).featureId || null,
+    updatedAt: (populated as any).updatedAt,
   });
 });
 
@@ -197,4 +302,56 @@ export const listFeatures = asyncHandler(async (req: Request, res: Response) => 
   }));
 
   res.json(sanitized);
+});
+
+export const listSprints = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.apiKey) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const sprints = await Sprint.find().sort({ startDate: -1 });
+  const sanitized = sprints.map((s: any) => ({
+    _id: s._id,
+    name: s.name,
+    startDate: s.startDate,
+    endDate: s.endDate,
+    createdAt: s.createdAt,
+  }));
+
+  res.json(sanitized);
+});
+
+export const listUsers = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.apiKey) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const users = await User.find({ isApproved: true }, { _id: 1, name: 1, email: 1, isAdmin: 1 });
+  const sanitized = users.map((u: any) => ({
+    _id: u._id,
+    name: u.name,
+    email: u.email,
+    isAdmin: u.isAdmin,
+  }));
+
+  res.json(sanitized);
+});
+
+export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.apiKey) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const user = await User.findById(req.apiKey.createdByUserId);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin,
+    isApproved: user.isApproved,
+  });
 });

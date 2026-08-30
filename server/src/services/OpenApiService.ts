@@ -71,10 +71,82 @@ export class OpenApiService {
             },
           },
         },
+        '/agent/tasks/sprint': {
+          get: {
+            summary: 'List all Sprints',
+            description: 'Fetch all sprints with their names, start dates, and end dates.',
+            operationId: 'listSprints',
+            tags: ['Sprints'],
+            security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
+            responses: {
+              '200': {
+                description: 'List of sprints',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'array',
+                      items: {
+                        $ref: '#/components/schemas/Sprint',
+                      },
+                    },
+                  },
+                },
+              },
+              '401': { $ref: '#/components/responses/Unauthorized' },
+            },
+          },
+        },
+        '/agent/tasks/user': {
+          get: {
+            summary: 'List all Users',
+            description: 'Fetch all approved users on the board.',
+            operationId: 'listUsers',
+            tags: ['Users'],
+            security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
+            responses: {
+              '200': {
+                description: 'List of users',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'array',
+                      items: {
+                        $ref: '#/components/schemas/User',
+                      },
+                    },
+                  },
+                },
+              },
+              '401': { $ref: '#/components/responses/Unauthorized' },
+            },
+          },
+        },
+        '/agent/tasks/me': {
+          get: {
+            summary: 'Get Current User Profile',
+            description: 'Fetch the profile of the user associated with the authenticated API key (whoami).',
+            operationId: 'getCurrentUser',
+            tags: ['Users'],
+            security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
+            responses: {
+              '200': {
+                description: 'Current user profile',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref: '#/components/schemas/User',
+                    },
+                  },
+                },
+              },
+              '401': { $ref: '#/components/responses/Unauthorized' },
+            },
+          },
+        },
         '/agent/tasks/us': {
           get: {
             summary: 'List User Stories / Tasks',
-            description: 'Fetch user stories / tasks from the active sprint or backlog with optional status filtering.',
+            description: 'Fetch user stories / tasks from the active sprint or backlog with optional status, user, and sprint filtering.',
             operationId: 'listTasks',
             tags: ['Tasks'],
             security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
@@ -90,6 +162,33 @@ export class OpenApiService {
                 },
               },
               {
+                name: 'assignedUser',
+                in: 'query',
+                description: 'Filter tasks by assigned user name, email, user ID, or "me"',
+                required: false,
+                schema: {
+                  type: 'string',
+                },
+              },
+              {
+                name: 'sprint',
+                in: 'query',
+                description: 'Filter tasks by sprint name (e.g. "Sprint 4") or sprint ID',
+                required: false,
+                schema: {
+                  type: 'string',
+                },
+              },
+              {
+                name: 'sprintId',
+                in: 'query',
+                description: 'Filter tasks by sprint ID',
+                required: false,
+                schema: {
+                  type: 'string',
+                },
+              },
+              {
                 name: 'limit',
                 in: 'query',
                 description: 'Maximum number of tasks to return (default: 50, max: 500)',
@@ -102,7 +201,7 @@ export class OpenApiService {
               {
                 name: 'sortBy',
                 in: 'query',
-                description: 'Field to sort by (default: createdAt)',
+                description: 'Field to sort tasks by (default: createdAt)',
                 required: false,
                 schema: {
                   type: 'string',
@@ -129,8 +228,8 @@ export class OpenApiService {
             },
           },
           post: {
-            summary: 'Create a Task / User Story',
-            description: 'Create a new task on the Mjolnir agile board associated with a specific feature and the active sprint.',
+            summary: 'Create a new Task / User Story',
+            description: 'Create a task associated with a parent feature and active sprint.',
             operationId: 'createTask',
             tags: ['Tasks'],
             security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
@@ -146,7 +245,7 @@ export class OpenApiService {
             },
             responses: {
               '201': {
-                description: 'Task created successfully',
+                description: 'Task successfully created',
                 content: {
                   'application/json': {
                     schema: {
@@ -249,6 +348,25 @@ export class OpenApiService {
               },
             },
           },
+          Sprint: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', description: 'Sprint ID' },
+              name: { type: 'string', description: 'Sprint Name' },
+              startDate: { type: 'string', format: 'date-time' },
+              endDate: { type: 'string', format: 'date-time' },
+            },
+          },
+          User: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', description: 'User ID' },
+              name: { type: 'string', description: 'User Name' },
+              email: { type: 'string', description: 'User Email' },
+              isAdmin: { type: 'boolean' },
+              isApproved: { type: 'boolean' },
+            },
+          },
           UserStory: {
             type: 'object',
             properties: {
@@ -266,6 +384,35 @@ export class OpenApiService {
               },
               priority: { type: 'string' },
               tags: { type: 'array', items: { type: 'string' } },
+              assignedUser: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string' },
+                  email: { type: 'string' },
+                },
+              },
+              sprint: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string' },
+                  startDate: { type: 'string', format: 'date-time' },
+                  endDate: { type: 'string', format: 'date-time' },
+                },
+              },
+              sprintId: { type: 'string', nullable: true },
+              feature: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  _id: { type: 'string' },
+                  title: { type: 'string' },
+                },
+              },
+              featureId: { type: 'string', nullable: true },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
             },

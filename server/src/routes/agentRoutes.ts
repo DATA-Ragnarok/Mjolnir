@@ -5,6 +5,9 @@ import {
   createUserStory,
   updateUserStoryStatus,
   listFeatures,
+  listSprints,
+  listUsers,
+  getCurrentUser,
 } from '../controllers/AgentController.js';
 import { agentAuthMiddleware, requireScope } from '../middleware/agentAuth.js';
 
@@ -18,6 +21,17 @@ router.get('/epic', requireScope('read:epics'), listEpics);
 
 // Features endpoint
 router.get('/feature', requireScope('read:features'), listFeatures);
+
+// Sprints endpoint
+router.get('/sprint', requireScope('read:tasks'), listSprints);
+router.get('/sprints', requireScope('read:tasks'), listSprints);
+
+// Users endpoint
+router.get('/user', requireScope('read:tasks'), listUsers);
+router.get('/users', requireScope('read:tasks'), listUsers);
+
+// Current User (whoami) endpoint
+router.get('/me', requireScope('read:tasks'), getCurrentUser);
 
 // User Stories endpoints
 router.get('/us', requireScope('read:tasks'), listUserStories);

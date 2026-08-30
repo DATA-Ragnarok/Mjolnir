@@ -406,7 +406,7 @@ Use your Mjolnir tools to:
 
       {/* Available Tools Summary */}
       <div className="pt-4 border-t border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">Complete Tool & Action Inventory (5 Operations):</h3>
+        <h3 className="font-semibold text-gray-900 mb-3">Complete Tool & Action Inventory (8 Operations):</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-3">
             <p className="font-mono text-xs font-bold text-indigo-700">mjolnir_list_epics</p>
@@ -422,8 +422,26 @@ Use your Mjolnir tools to:
 
           <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-3">
             <p className="font-mono text-xs font-bold text-indigo-700">mjolnir_list_tasks</p>
-            <p className="text-xs text-gray-600 mt-0.5">Query tasks (status, limit, sortBy)</p>
+            <p className="text-xs text-gray-600 mt-0.5">Query tasks (status, assignedUser, sprint)</p>
             <span className="text-[10px] text-gray-400 font-mono">GET /agent/tasks/us</span>
+          </div>
+
+          <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-3">
+            <p className="font-mono text-xs font-bold text-indigo-700">mjolnir_list_sprints</p>
+            <p className="text-xs text-gray-600 mt-0.5">Fetch sprints, dates & active status</p>
+            <span className="text-[10px] text-gray-400 font-mono">GET /agent/tasks/sprint</span>
+          </div>
+
+          <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-3">
+            <p className="font-mono text-xs font-bold text-indigo-700">mjolnir_list_users</p>
+            <p className="text-xs text-gray-600 mt-0.5">Fetch approved board team members</p>
+            <span className="text-[10px] text-gray-400 font-mono">GET /agent/tasks/user</span>
+          </div>
+
+          <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-3">
+            <p className="font-mono text-xs font-bold text-indigo-700">mjolnir_get_current_user</p>
+            <p className="text-xs text-gray-600 mt-0.5">Get authenticated agent session identity</p>
+            <span className="text-[10px] text-gray-400 font-mono">GET /agent/tasks/me</span>
           </div>
 
           <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-3">

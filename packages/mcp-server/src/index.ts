@@ -54,7 +54,8 @@ const tools: Tool[] = [
   },
   {
     name: 'mjolnir_list_tasks',
-    description: 'Fetch existing tasks from the Mjolnir agile board with optional status filtering.',
+    description:
+      'Fetch existing tasks from the Mjolnir agile board with populated assigned user and sprint details, plus optional filtering.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -62,11 +63,52 @@ const tools: Tool[] = [
           type: 'string',
           description: 'Filter by status (To Do, In Progress, Blocked, Waiting for MR, Done)',
         },
+        assignedUser: {
+          type: 'string',
+          description:
+            'Filter by assigned user name, email, user ID, or "me" for the current authenticated user',
+        },
+        sprint: {
+          type: 'string',
+          description: 'Filter by sprint name (e.g. "Sprint 4") or sprint ID',
+        },
+        sprintId: {
+          type: 'string',
+          description: 'Filter directly by sprint ID',
+        },
+        featureId: {
+          type: 'string',
+          description: 'Filter by parent feature ID',
+        },
         limit: {
           type: 'number',
           description: 'Maximum number of tasks to return (default: 50, max: 500)',
         },
       },
+    },
+  },
+  {
+    name: 'mjolnir_list_sprints',
+    description: 'Fetch all sprints on the Mjolnir agile board with their names, start dates, and end dates.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'mjolnir_list_users',
+    description: 'Fetch all approved users on the Mjolnir agile board with their ID, name, and email.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'mjolnir_get_current_user',
+    description: 'Get profile details of the user associated with the current API key (whoami).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
     },
   },
   {
@@ -90,6 +132,10 @@ const tools: Tool[] = [
         featureId: {
           type: 'string',
           description: 'Feature ID to associate with this task (required)',
+        },
+        assignedUserId: {
+          type: 'string',
+          description: 'Optional User ID to assign to the task',
         },
       },
       required: ['title', 'featureId'],
@@ -168,10 +214,51 @@ const callToolHandler = async (request: any): Promise<any> => {
         };
       }
 
+      case 'mjolnir_list_sprints': {
+        const response = await apiClient.get('agent/tasks/sprint');
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(response.data, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'mjolnir_list_users': {
+        const response = await apiClient.get('agent/tasks/user');
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(response.data, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'mjolnir_get_current_user':
+      case 'mjolnir_whoami': {
+        const response = await apiClient.get('agent/tasks/me');
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(response.data, null, 2),
+            },
+          ],
+        };
+      }
+
       case 'mjolnir_list_tasks': {
         const queryParams: Record<string, any> = {};
         if (typedArgs.status) queryParams.status = typedArgs.status;
         if (typedArgs.limit) queryParams.limit = typedArgs.limit;
+        if (typedArgs.assignedUser) queryParams.assignedUser = typedArgs.assignedUser;
+        if (typedArgs.sprint) queryParams.sprint = typedArgs.sprint;
+        if (typedArgs.sprintId) queryParams.sprintId = typedArgs.sprintId;
+        if (typedArgs.featureId) queryParams.featureId = typedArgs.featureId;
 
         const response = await apiClient.get('agent/tasks/us', { params: queryParams });
         return {
@@ -185,7 +272,7 @@ const callToolHandler = async (request: any): Promise<any> => {
       }
 
       case 'mjolnir_create_task': {
-        const { title, description, storyPoints, featureId } = typedArgs;
+        const { title, description, storyPoints, featureId, assignedUserId } = typedArgs;
 
         if (!title || typeof title !== 'string') {
           return {
@@ -211,12 +298,15 @@ const callToolHandler = async (request: any): Promise<any> => {
           };
         }
 
-        const payload = {
+        const payload: Record<string, any> = {
           title,
           description: description || '',
           storyPoints: storyPoints || 5,
           featureId,
         };
+        if (assignedUserId) {
+          payload.assignedUserId = assignedUserId;
+        }
 
         const response = await apiClient.post('agent/tasks/us', payload);
         return {

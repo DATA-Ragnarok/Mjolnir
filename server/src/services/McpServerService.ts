@@ -5,14 +5,16 @@ import {
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import ApiKeyModel from '../models/ApiKey.js';
 import User from '../models/User.js';
+import Sprint from '../models/Sprint.js';
+import UserStory, { UserStoryStatus } from '../models/UserStory.js';
 import { EpicDAL } from '../dal/EpicDAL.js';
 import { FeatureDAL } from '../dal/FeatureDAL.js';
 import { UserStoryDAL } from '../dal/UserStoryDAL.js';
 import { UserStoryService } from '../services/UserStoryService.js';
 import { SprintService } from '../services/SprintService.js';
-import { UserStoryStatus } from '../models/UserStory.js';
 
 export const MCP_TOOLS: Tool[] = [
   {
@@ -33,19 +35,61 @@ export const MCP_TOOLS: Tool[] = [
   },
   {
     name: 'mjolnir_list_tasks',
-    description: 'Fetch existing tasks (user stories) from the Mjolnir agile board with optional status filtering.',
+    description:
+      'Fetch tasks (user stories) from the Mjolnir agile board with populated assigned user, sprint, and feature details. Supports filtering by status, assigned user, sprint, and limit.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         status: {
           type: 'string',
-          description: 'Filter by status (To Do, In Progress, Blocked, Waiting for MR, Done)',
+          description: 'Filter by status: "To Do", "In Progress", "Blocked", "Waiting for MR", or "Done"',
+        },
+        assignedUser: {
+          type: 'string',
+          description:
+            'Filter by assigned user name, email, user ID, or "me" for the currently authenticated user/key owner',
+        },
+        sprint: {
+          type: 'string',
+          description: 'Filter by sprint name (e.g. "Sprint 4") or sprint ID',
+        },
+        sprintId: {
+          type: 'string',
+          description: 'Filter directly by sprint ID',
+        },
+        featureId: {
+          type: 'string',
+          description: 'Filter by parent feature ID',
         },
         limit: {
           type: 'number',
           description: 'Maximum number of tasks to return (default: 50, max: 500)',
         },
       },
+    },
+  },
+  {
+    name: 'mjolnir_list_sprints',
+    description: 'Fetch all sprints on the Mjolnir agile board with their names, start dates, and end dates.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'mjolnir_list_users',
+    description: 'Fetch all approved users on the Mjolnir agile board with their ID, name, and email.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'mjolnir_get_current_user',
+    description: 'Get profile details of the user associated with the current API key/connection session (whoami).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
     },
   },
   {
@@ -70,13 +114,18 @@ export const MCP_TOOLS: Tool[] = [
           type: 'string',
           description: 'Parent Feature ID to associate with this task (required)',
         },
+        assignedUserId: {
+          type: 'string',
+          description: 'Optional User ID to assign this task to (defaults to authenticated key owner)',
+        },
       },
       required: ['title', 'featureId'],
     },
   },
   {
     name: 'mjolnir_update_task_status',
-    description: 'Update the status of an existing task on the Mjolnir agile board. Cascades activation to parent feature/epic, or marks feature done if all sibling stories are done.',
+    description:
+      'Update the status of an existing task on the Mjolnir agile board. Cascades activation to parent feature/epic, or marks feature done if all sibling stories are done.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -205,31 +254,141 @@ export class McpServerService {
             };
           }
 
+          case 'mjolnir_list_sprints': {
+            const sprints = await Sprint.find().sort({ startDate: -1 });
+            const sanitized = sprints.map((s: any) => ({
+              _id: s._id,
+              name: s.name,
+              startDate: s.startDate,
+              endDate: s.endDate,
+              createdAt: s.createdAt,
+            }));
+
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: JSON.stringify(sanitized, null, 2),
+                },
+              ],
+            };
+          }
+
+          case 'mjolnir_list_users': {
+            const users = await User.find(
+              { isApproved: true },
+              { _id: 1, name: 1, email: 1, isAdmin: 1 }
+            );
+
+            const sanitized = users.map((u: any) => ({
+              _id: u._id,
+              name: u.name,
+              email: u.email,
+              isAdmin: u.isAdmin,
+            }));
+
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: JSON.stringify(sanitized, null, 2),
+                },
+              ],
+            };
+          }
+
+          case 'mjolnir_get_current_user':
+          case 'mjolnir_whoami': {
+            const userId = await McpServerService.resolveUserId(apiKeyString);
+            if (!userId) {
+              return {
+                content: [{ type: 'text' as const, text: 'Error: No user found for current session' }],
+                isError: true,
+              };
+            }
+
+            const user = await User.findById(userId);
+            if (!user) {
+              return {
+                content: [{ type: 'text' as const, text: 'Error: User not found' }],
+                isError: true,
+              };
+            }
+
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: JSON.stringify(
+                    {
+                      _id: user._id,
+                      name: user.name,
+                      email: user.email,
+                      isAdmin: user.isAdmin,
+                      isApproved: user.isApproved,
+                    },
+                    null,
+                    2
+                  ),
+                },
+              ],
+            };
+          }
+
           case 'mjolnir_list_tasks': {
             const query: any = {};
             if (typedArgs.status && typeof typedArgs.status === 'string') {
               query.status = typedArgs.status;
             }
 
+            if (typedArgs.featureId && typeof typedArgs.featureId === 'string') {
+              query.featureId = typedArgs.featureId;
+            }
+
+            if (typedArgs.sprintId && typeof typedArgs.sprintId === 'string') {
+              query.sprintId = typedArgs.sprintId;
+            } else if (typedArgs.sprint && typeof typedArgs.sprint === 'string') {
+              const sprintVal = typedArgs.sprint.trim();
+              if (mongoose.Types.ObjectId.isValid(sprintVal)) {
+                query.sprintId = sprintVal;
+              } else {
+                const matchingSprints = await Sprint.find({
+                  name: { $regex: sprintVal, $options: 'i' },
+                });
+                const sprintIds = matchingSprints.map((s) => s._id);
+                query.sprintId = { $in: sprintIds };
+              }
+            }
+
+            if (typedArgs.assignedUser && typeof typedArgs.assignedUser === 'string') {
+              const userVal = typedArgs.assignedUser.trim();
+              if (userVal.toLowerCase() === 'me') {
+                const resolvedId = await McpServerService.resolveUserId(apiKeyString);
+                if (resolvedId) {
+                  query.assignedUser = resolvedId;
+                }
+              } else if (mongoose.Types.ObjectId.isValid(userVal)) {
+                query.assignedUser = userVal;
+              } else {
+                const matchingUsers = await User.find({
+                  $or: [
+                    { name: { $regex: userVal, $options: 'i' } },
+                    { email: { $regex: userVal, $options: 'i' } },
+                  ],
+                });
+                const userIds = matchingUsers.map((u) => u._id);
+                query.assignedUser = { $in: userIds };
+              }
+            }
+
             const limit = Math.min(parseInt(typedArgs.limit as any) || 50, 500);
 
-            const stories = await UserStoryDAL.find(
-              query,
-              {
-                _id: 1,
-                title: 1,
-                description: 1,
-                status: 1,
-                storyPoints: 1,
-                createdAt: 1,
-                tags: 1,
-                priority: 1,
-              },
-              {
-                limit,
-                sort: { createdAt: -1 },
-              }
-            );
+            const stories = await UserStory.find(query)
+              .populate('assignedUser')
+              .populate('sprintId')
+              .populate('featureId')
+              .limit(limit)
+              .sort({ createdAt: -1 });
 
             const sanitized = stories.map((story: any) => ({
               _id: story._id,
@@ -239,7 +398,33 @@ export class McpServerService {
               storyPoints: story.storyPoints,
               priority: story.priority,
               tags: story.tags,
+              assignedUser: story.assignedUser
+                ? {
+                    _id: story.assignedUser._id,
+                    name: story.assignedUser.name,
+                    email: story.assignedUser.email,
+                  }
+                : null,
+              sprint:
+                story.sprintId && typeof story.sprintId === 'object'
+                  ? {
+                      _id: story.sprintId._id,
+                      name: story.sprintId.name,
+                      startDate: story.sprintId.startDate,
+                      endDate: story.sprintId.endDate,
+                    }
+                  : null,
+              sprintId: story.sprintId?._id || story.sprintId || null,
+              feature:
+                story.featureId && typeof story.featureId === 'object'
+                  ? {
+                      _id: story.featureId._id,
+                      title: story.featureId.title,
+                    }
+                  : null,
+              featureId: story.featureId?._id || story.featureId || null,
               createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
             }));
 
             return {
@@ -253,7 +438,7 @@ export class McpServerService {
           }
 
           case 'mjolnir_create_task': {
-            const { title, description, storyPoints, featureId } = typedArgs;
+            const { title, description, storyPoints, featureId, assignedUserId } = typedArgs;
 
             if (!title || typeof title !== 'string') {
               return {
@@ -293,7 +478,7 @@ export class McpServerService {
               };
             }
 
-            const userId = await this.resolveUserId(apiKeyString);
+            const resolvedUserId = assignedUserId || (await McpServerService.resolveUserId(apiKeyString));
 
             const newStory = await UserStoryDAL.create({
               title,
@@ -302,8 +487,13 @@ export class McpServerService {
               storyPoints: points,
               featureId: featureId as any,
               sprintId: currentSprint._id as any,
-              assignedUser: userId as any,
+              assignedUser: resolvedUserId as any,
             });
+
+            const populated = await UserStory.findById(newStory._id)
+              .populate('assignedUser')
+              .populate('sprintId')
+              .populate('featureId');
 
             return {
               content: [
@@ -311,12 +501,35 @@ export class McpServerService {
                   type: 'text' as const,
                   text: JSON.stringify(
                     {
-                      _id: (newStory as any)._id,
-                      title: (newStory as any).title,
-                      description: (newStory as any).description,
-                      status: (newStory as any).status,
-                      storyPoints: (newStory as any).storyPoints,
-                      createdAt: (newStory as any).createdAt,
+                      _id: (populated as any)._id,
+                      title: (populated as any).title,
+                      description: (populated as any).description,
+                      status: (populated as any).status,
+                      storyPoints: (populated as any).storyPoints,
+                      assignedUser: (populated as any).assignedUser
+                        ? {
+                            _id: (populated as any).assignedUser._id,
+                            name: (populated as any).assignedUser.name,
+                            email: (populated as any).assignedUser.email,
+                          }
+                        : null,
+                      sprint: (populated as any).sprintId
+                        ? {
+                            _id: (populated as any).sprintId._id,
+                            name: (populated as any).sprintId.name,
+                            startDate: (populated as any).sprintId.startDate,
+                            endDate: (populated as any).sprintId.endDate,
+                          }
+                        : null,
+                      sprintId: (populated as any).sprintId?._id || (populated as any).sprintId || null,
+                      feature: (populated as any).featureId
+                        ? {
+                            _id: (populated as any).featureId._id,
+                            title: (populated as any).featureId.title,
+                          }
+                        : null,
+                      featureId: (populated as any).featureId?._id || (populated as any).featureId || null,
+                      createdAt: (populated as any).createdAt,
                     },
                     null,
                     2
@@ -364,18 +577,46 @@ export class McpServerService {
               };
             }
 
+            const populated = await UserStory.findById(updatedStory._id)
+              .populate('assignedUser')
+              .populate('sprintId')
+              .populate('featureId');
+
             return {
               content: [
                 {
                   type: 'text' as const,
                   text: JSON.stringify(
                     {
-                      _id: (updatedStory as any)._id,
-                      title: (updatedStory as any).title,
-                      description: (updatedStory as any).description,
-                      status: (updatedStory as any).status,
-                      storyPoints: (updatedStory as any).storyPoints,
-                      updatedAt: (updatedStory as any).updatedAt,
+                      _id: (populated as any)._id,
+                      title: (populated as any).title,
+                      description: (populated as any).description,
+                      status: (populated as any).status,
+                      storyPoints: (populated as any).storyPoints,
+                      assignedUser: (populated as any).assignedUser
+                        ? {
+                            _id: (populated as any).assignedUser._id,
+                            name: (populated as any).assignedUser.name,
+                            email: (populated as any).assignedUser.email,
+                          }
+                        : null,
+                      sprint: (populated as any).sprintId
+                        ? {
+                            _id: (populated as any).sprintId._id,
+                            name: (populated as any).sprintId.name,
+                            startDate: (populated as any).sprintId.startDate,
+                            endDate: (populated as any).sprintId.endDate,
+                          }
+                        : null,
+                      sprintId: (populated as any).sprintId?._id || (populated as any).sprintId || null,
+                      feature: (populated as any).featureId
+                        ? {
+                            _id: (populated as any).featureId._id,
+                            title: (populated as any).featureId.title,
+                          }
+                        : null,
+                      featureId: (populated as any).featureId?._id || (populated as any).featureId || null,
+                      updatedAt: (populated as any).updatedAt,
                     },
                     null,
                     2
