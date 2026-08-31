@@ -17,7 +17,7 @@ const FeaturesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const epicIdFilter = searchParams.get('epicId') || undefined;
 
-  const { openModal, closeModal, isOpen: isModalOpen } = useModal();
+  const { openModal, closeModal } = useModal();
   const { features, loading: loadingFeatures, error: featureError, refetch: refetchFeatures } = useFeatures(epicIdFilter);
   const { epics } = useEpics();
   const lastOpenedId = useRef<string | undefined>(undefined);
@@ -50,11 +50,11 @@ const FeaturesPage: React.FC = () => {
       } else if (!loadingFeatures) {
         navigate('/features', { replace: true });
       }
-    } else if (!featureId && isModalOpen) {
+    } else if (!featureId && lastOpenedId.current !== undefined) {
       closeModal();
       lastOpenedId.current = undefined;
     }
-  }, [featureId, features, loadingFeatures, navigate, openModal, closeModal, isModalOpen, refetchFeatures, epicIdFilter]);
+  }, [featureId, features, loadingFeatures, navigate, openModal, closeModal, refetchFeatures, epicIdFilter]);
 
   const handleCreateClick = () => {
     navigate(`/features/new${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);

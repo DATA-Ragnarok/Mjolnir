@@ -12,7 +12,7 @@ import EmptyState from '../components/EmptyState';
 const EpicsPage: React.FC = () => {
   const navigate = useNavigate();
   const { epicId } = useParams<{ epicId: string }>();
-  const { openModal, closeModal, isOpen: isModalOpen } = useModal();
+  const { openModal, closeModal } = useModal();
   const { epics, loading, error, refetch } = useEpics();
   const lastOpenedId = useRef<string | undefined>(undefined);
 
@@ -38,11 +38,11 @@ const EpicsPage: React.FC = () => {
       } else if (!loading) {
         navigate('/epics', { replace: true });
       }
-    } else if (!epicId && isModalOpen) {
+    } else if (!epicId && lastOpenedId.current !== undefined) {
       closeModal();
       lastOpenedId.current = undefined;
     }
-  }, [epicId, epics, loading, navigate, openModal, closeModal, isModalOpen, refetch]);
+  }, [epicId, epics, loading, navigate, openModal, closeModal, refetch]);
 
   const handleCreateClick = () => {
     navigate('/epics/new');
