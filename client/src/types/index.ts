@@ -63,3 +63,10 @@ export type Sprint = {
   startDate: string;
   endDate: string;
 };
+
+export type ApiKeyInfo = {
+  key: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+};
