@@ -42,13 +42,15 @@ export type UserStory = {
   storyPoints: number;
   featureId: string;
   sprintId?: string;
-  assignedUser?: User | null;
+  // assignedUser can be a populated User object (from server) or just a user id string (from form/select)
+  assignedUser?: User | string;
   createdAt: string;
   updatedAt: string;
 };
 
 export type User = {
   _id: string;
+  // Provide a stable `id` alias used across components (keep it required to avoid undefined-index issues)
   id?: string;
   googleId: string;
   email: string;

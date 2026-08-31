@@ -41,8 +41,8 @@ const UserStoryModalContent: React.FC<UserStoryModalContentProps> = ({
     setFeatureId,
     sprintId,
     setSprintId,
-    assignedUserId,
-    setAssignedUserId,
+    assignedUser,
+    setAssignedUser,
     users,
     sprints,
     features,
@@ -162,8 +162,8 @@ const UserStoryModalContent: React.FC<UserStoryModalContentProps> = ({
                   <div className="relative">
                     <select
                       id="assignedUser"
-                      value={assignedUserId}
-                      onChange={(e) => setAssignedUserId(e.target.value)}
+                      value={assignedUser}
+                      onChange={(e) => setAssignedUser(e.target.value)}
                       className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none transition-all cursor-pointer"
                     >
                       <option value="">Unassigned</option>
