@@ -21,6 +21,13 @@ export class SprintDAL {
     return await Sprint.find({ endDate: { $lt: date } });
   }
 
+  static async findActive(now: Date = new Date()) {
+    return await Sprint.findOne({
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).sort({ startDate: 1 });
+  }
+
   static async findNextSprint(endDate: Date) {
     return await Sprint.findOne({ startDate: { $gt: endDate } }).sort({ startDate: 1 });
   }

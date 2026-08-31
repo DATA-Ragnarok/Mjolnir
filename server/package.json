@@ -8,7 +8,9 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "init:mcp": "tsx src/scripts/initMcp.ts",
+    "mcp:stdio": "tsx src/mcp-stdio.ts",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --no-watchman"
   },
   "keywords": [],
   "author": "",
