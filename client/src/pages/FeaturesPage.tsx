@@ -17,51 +17,45 @@ const FeaturesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const epicIdFilter = searchParams.get('epicId') || undefined;
 
-  const { openModal, closeModal } = useModal();
+  const { openModal } = useModal();
   const { features, loading: loadingFeatures, error: featureError, refetch: refetchFeatures } = useFeatures(epicIdFilter);
   const { epics } = useEpics();
-  const lastOpenedId = useRef<string | undefined>(undefined);
 
   const selectedEpic = useMemo(() => 
     epics.find(e => e._id === epicIdFilter),
     [epics, epicIdFilter]
   );
 
+  const handleOpenFeature = React.useCallback((feature?: FeatureWithProgress) => {
+    openModal(
+      <FeatureModalContent 
+        feature={feature}
+        onSubmit={refetchFeatures}
+        initialEpicId={epicIdFilter}
+      />,
+      { maxWidth: '6xl' }
+    );
+  }, [openModal, refetchFeatures, epicIdFilter]);
+
+  // Initial deep link support: if someone loads /features/:featureId directly, open it and normalize URL
+  const initialHandled = useRef(false);
   useEffect(() => {
-    if (featureId && features.length > 0 && featureId !== lastOpenedId.current) {
+    if (!initialHandled.current && featureId && features.length > 0) {
+      initialHandled.current = true;
       const feature = featureId === 'new' ? undefined : features.find(f => f._id === featureId);
-      
       if (feature || featureId === 'new') {
-        lastOpenedId.current = featureId;
-        openModal(
-          <FeatureModalContent 
-            feature={feature}
-            onSubmit={() => refetchFeatures()}
-            initialEpicId={epicIdFilter}
-          />,
-          { 
-            maxWidth: '6xl',
-            onClose: () => {
-              lastOpenedId.current = undefined;
-              navigate(`/features${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
-            }
-          }
-        );
-      } else if (!loadingFeatures) {
-        navigate('/features', { replace: true });
+        handleOpenFeature(feature);
       }
-    } else if (!featureId && lastOpenedId.current !== undefined) {
-      closeModal();
-      lastOpenedId.current = undefined;
+      navigate(`/features${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`, { replace: true });
     }
-  }, [featureId, features, loadingFeatures, navigate, openModal, closeModal, refetchFeatures, epicIdFilter]);
+  }, [featureId, features, handleOpenFeature, navigate, epicIdFilter]);
 
   const handleCreateClick = () => {
-    navigate(`/features/new${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
+    handleOpenFeature(undefined);
   };
 
   const handleFeatureClick = (feature: FeatureWithProgress) => {
-    navigate(`/features/${feature._id}${epicIdFilter ? `?epicId=${epicIdFilter}` : ''}`);
+    handleOpenFeature(feature);
   };
 
   const handleEpicFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

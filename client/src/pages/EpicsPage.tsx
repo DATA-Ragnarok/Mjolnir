@@ -12,44 +12,38 @@ import EmptyState from '../components/EmptyState';
 const EpicsPage: React.FC = () => {
   const navigate = useNavigate();
   const { epicId } = useParams<{ epicId: string }>();
-  const { openModal, closeModal } = useModal();
+  const { openModal } = useModal();
   const { epics, loading, error, refetch } = useEpics();
-  const lastOpenedId = useRef<string | undefined>(undefined);
 
+  const handleOpenEpic = React.useCallback((epic?: EpicWithProgress) => {
+    openModal(
+      <EpicModalContent 
+        epic={epic}
+        onSubmit={refetch}
+      />,
+      { maxWidth: '6xl' }
+    );
+  }, [openModal, refetch]);
+
+  // Initial deep link support: if someone loads /epics/:epicId directly, open it and normalize URL
+  const initialHandled = useRef(false);
   useEffect(() => {
-    if (epicId && epics.length > 0 && epicId !== lastOpenedId.current) {
+    if (!initialHandled.current && epicId && epics.length > 0) {
+      initialHandled.current = true;
       const epic = epicId === 'new' ? undefined : epics.find(e => e._id === epicId);
-      
       if (epic || epicId === 'new') {
-        lastOpenedId.current = epicId;
-        openModal(
-          <EpicModalContent 
-            epic={epic}
-            onSubmit={() => refetch()}
-          />,
-          { 
-            maxWidth: '6xl',
-            onClose: () => {
-              lastOpenedId.current = undefined;
-              navigate('/epics');
-            }
-          }
-        );
-      } else if (!loading) {
-        navigate('/epics', { replace: true });
+        handleOpenEpic(epic);
       }
-    } else if (!epicId && lastOpenedId.current !== undefined) {
-      closeModal();
-      lastOpenedId.current = undefined;
+      navigate('/epics', { replace: true });
     }
-  }, [epicId, epics, loading, navigate, openModal, closeModal, refetch]);
+  }, [epicId, epics, handleOpenEpic, navigate]);
 
   const handleCreateClick = () => {
-    navigate('/epics/new');
+    handleOpenEpic(undefined);
   };
 
   const handleEpicClick = (epic: EpicWithProgress) => {
-    navigate(`/epics/${epic._id}`);
+    handleOpenEpic(epic);
   };
 
   if (loading && epics.length === 0) {
