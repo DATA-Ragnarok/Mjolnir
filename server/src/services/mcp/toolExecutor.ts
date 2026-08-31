@@ -5,7 +5,10 @@ import { EpicService } from '../EpicService.js';
 import { SprintService } from '../SprintService.js';
 import { UserService } from '../UserService.js';
 import { User as UserType } from '../../models/User.js';
-import { UserStoryStatus } from '../../models/UserStory.js';
+import { UserStory as UserStoryType, UserStoryStatus } from '../../models/UserStory.js';
+import { Feature as FeatureType } from '../../models/Feature.js';
+import { Epic as EpicType } from '../../models/Epic.js';
+import { Sprint as SprintType } from '../../models/Sprint.js';
 import {
   UserStorySummaryDTO,
   UserStoryDetailDTO,
@@ -16,90 +19,110 @@ import {
   UserProfileDTO
 } from './types.js';
 
-const toUserStorySummaryDTO = (s: any): UserStorySummaryDTO => ({
-  _id: s._id,
-  title: s.title,
-  status: s.status,
-  storyPoints: s.storyPoints,
-  featureId: s.featureId,
-  sprintId: s.sprintId || undefined,
-  assignedUser: s.assignedUser ? (typeof s.assignedUser === 'object' && s.assignedUser.name ? s.assignedUser.name : s.assignedUser) : undefined
-});
+const toUserStorySummaryDTO = (s: UserStoryType): UserStorySummaryDTO => {
+  let assigneeStr: string | undefined;
+  if (s.assignedUser) {
+    if (typeof s.assignedUser === 'object' && 'name' in s.assignedUser && s.assignedUser.name) {
+      assigneeStr = s.assignedUser.name;
+    } else {
+      assigneeStr = String(s.assignedUser);
+    }
+  }
 
-const toUserStoryDetailDTO = (s: any): UserStoryDetailDTO => ({
-  _id: s._id,
+  return {
+    _id: String(s._id),
+    title: s.title,
+    status: s.status,
+    storyPoints: s.storyPoints,
+    featureId: String(s.featureId),
+    sprintId: s.sprintId ? String(s.sprintId) : undefined,
+    assignedUser: assigneeStr
+  };
+};
+
+const toUserStoryDetailDTO = (s: UserStoryType): UserStoryDetailDTO => ({
+  _id: String(s._id),
   title: s.title,
   description: s.description || '',
   storyPoints: s.storyPoints,
   status: s.status,
-  featureId: s.featureId,
-  sprintId: s.sprintId,
-  assignedUser: s.assignedUser
+  featureId: String(s.featureId),
+  sprintId: s.sprintId ? String(s.sprintId) : undefined,
+  assignedUser: s.assignedUser ? (typeof s.assignedUser === 'object' && 'name' in s.assignedUser ? {
+    _id: String(s.assignedUser._id),
+    name: s.assignedUser.name,
+    email: s.assignedUser.email
+  } : String(s.assignedUser)) : undefined
 });
 
-const toFeatureSummaryDTO = (f: any): FeatureSummaryDTO => ({
-  _id: f._id,
+const toFeatureSummaryDTO = (f: FeatureType): FeatureSummaryDTO => ({
+  _id: String(f._id),
   title: f.title,
   status: f.status,
-  epicId: f.epicId
+  epicId: String(f.epicId)
 });
 
-const toEpicSummaryDTO = (e: any): EpicSummaryDTO => ({
-  _id: e._id,
+const toEpicSummaryDTO = (e: EpicType): EpicSummaryDTO => ({
+  _id: String(e._id),
   title: e.title,
   status: e.status
 });
 
-const toSprintSummaryDTO = (s: any): SprintSummaryDTO => ({
-  _id: s._id,
+const toSprintSummaryDTO = (s: SprintType): SprintSummaryDTO => ({
+  _id: String(s._id),
   name: s.name,
   startDate: s.startDate,
   endDate: s.endDate
 });
 
-const toTeamMemberDTO = (m: any): TeamMemberDTO => ({
-  _id: m._id,
+const toTeamMemberDTO = (m: UserType): TeamMemberDTO => ({
+  _id: String(m._id),
   name: m.name,
   email: m.email
 });
 
-const toUserProfileDTO = (u: any): UserProfileDTO => ({
-  _id: u._id,
+const toUserProfileDTO = (u: UserType): UserProfileDTO => ({
+  _id: String(u._id),
   name: u.name,
   email: u.email,
   isAdmin: u.isAdmin
 });
 
 export class McpToolExecutor {
-  static async executeTool(name: string, args: any, user: UserType): Promise<any> {
+  static async executeTool(name: string, args: Record<string, unknown> | undefined, user: UserType): Promise<unknown> {
     const safeArgs = args && typeof args === 'object' && !Array.isArray(args) ? args : {};
 
     switch (name) {
       case 'list_user_stories': {
-        const { assignedUser = 'me', sprint = 'active', featureId, status, limit = 25 } = safeArgs;
-        const filter: any = {};
+        const assignedUser = typeof safeArgs['assignedUser'] === 'string' ? safeArgs['assignedUser'] : 'me';
+        const sprint = typeof safeArgs['sprint'] === 'string' ? safeArgs['sprint'] : 'active';
+        const featureId = typeof safeArgs['featureId'] === 'string' ? safeArgs['featureId'] : undefined;
+        const status = typeof safeArgs['status'] === 'string' ? safeArgs['status'] : undefined;
+        const limit = typeof safeArgs['limit'] === 'number' ? safeArgs['limit'] : 25;
+
+        const filter: Record<string, unknown> = {};
 
         if (assignedUser === 'me') {
-          if (user?._id) filter.assignedUser = user._id;
-        } else if (assignedUser !== 'all' && typeof assignedUser === 'string' && mongoose.Types.ObjectId.isValid(assignedUser)) {
-          filter.assignedUser = new mongoose.Types.ObjectId(assignedUser);
+          if (user?._id) filter['assignedUser'] = user._id;
+        } else if (assignedUser !== 'all' && mongoose.Types.ObjectId.isValid(assignedUser)) {
+          filter['assignedUser'] = new mongoose.Types.ObjectId(assignedUser);
         }
 
         if (sprint === 'active') {
           const activeSprint = await SprintService.getActiveSprint();
-          filter.sprintId = activeSprint ? activeSprint._id : null;
+          filter['sprintId'] = activeSprint ? activeSprint._id : null;
         } else if (sprint === 'backlog') {
-          filter.sprintId = { $in: [null, undefined] };
-        } else if (sprint !== 'all' && typeof sprint === 'string' && mongoose.Types.ObjectId.isValid(sprint)) {
-          filter.sprintId = new mongoose.Types.ObjectId(sprint);
+          filter['sprintId'] = { $in: [null, undefined] };
+        } else if (sprint !== 'all' && mongoose.Types.ObjectId.isValid(sprint)) {
+          filter['sprintId'] = new mongoose.Types.ObjectId(sprint);
         }
 
-        if (featureId && typeof featureId === 'string' && mongoose.Types.ObjectId.isValid(featureId)) {
-          filter.featureId = new mongoose.Types.ObjectId(featureId);
+        if (featureId && mongoose.Types.ObjectId.isValid(featureId)) {
+          filter['featureId'] = new mongoose.Types.ObjectId(featureId);
         }
 
         if (status && ['To Do', 'In Progress', 'Blocked', 'Waiting for MR', 'Done'].includes(status)) {
-          filter.status = status;
+          filter['status'] = status as UserStoryStatus;
         }
 
         const parsedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
@@ -113,7 +136,7 @@ export class McpToolExecutor {
       }
 
       case 'get_user_story': {
-        const { id } = safeArgs;
+        const id = typeof safeArgs['id'] === 'string' ? safeArgs['id'] : undefined;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
           throw new Error('Valid user story ID is required');
         }
@@ -125,37 +148,53 @@ export class McpToolExecutor {
       }
 
       case 'create_user_story': {
-        const { title, description, story_points, storyPoints, feature_id, featureId, sprint_id, sprintId, assigned_user_id, assignedUserId } = safeArgs;
-        const effectiveTitle = title?.trim();
-        const effectivePoints = story_points ?? storyPoints;
-        const effectiveFeatureId = feature_id ?? featureId;
-        const effectiveSprintId = sprint_id ?? sprintId;
-        const effectiveAssigneeId = assigned_user_id ?? assignedUserId;
+        const title = typeof safeArgs['title'] === 'string' ? safeArgs['title'].trim() : '';
+        const storyPoints = typeof safeArgs['storyPoints'] === 'number'
+          ? safeArgs['storyPoints']
+          : typeof safeArgs['story_points'] === 'number'
+          ? safeArgs['story_points']
+          : undefined;
+        const featureId = typeof safeArgs['featureId'] === 'string'
+          ? safeArgs['featureId']
+          : typeof safeArgs['feature_id'] === 'string'
+          ? safeArgs['feature_id']
+          : undefined;
+        const description = typeof safeArgs['description'] === 'string' ? safeArgs['description'].trim() : '';
+        const sprintId = typeof safeArgs['sprintId'] === 'string'
+          ? safeArgs['sprintId']
+          : typeof safeArgs['sprint_id'] === 'string'
+          ? safeArgs['sprint_id']
+          : undefined;
+        const assignedUserId = typeof safeArgs['assignedUserId'] === 'string'
+          ? safeArgs['assignedUserId']
+          : typeof safeArgs['assigned_user_id'] === 'string'
+          ? safeArgs['assigned_user_id']
+          : undefined;
 
-        if (!effectiveTitle) throw new Error('Title is mandatory');
-        if (effectivePoints === undefined || typeof effectivePoints !== 'number') throw new Error('Story points is mandatory and must be a number');
-        if (!effectiveFeatureId || !mongoose.Types.ObjectId.isValid(effectiveFeatureId)) throw new Error('Valid featureId is mandatory');
+        if (!title) throw new Error('Title is mandatory');
+        if (storyPoints === undefined || isNaN(storyPoints)) throw new Error('Story points is mandatory and must be a number');
+        if (!featureId || !mongoose.Types.ObjectId.isValid(featureId)) throw new Error('Valid featureId is mandatory');
 
-        const feature = await FeatureService.getById(effectiveFeatureId);
+        const feature = await FeatureService.getById(featureId);
         if (!feature) throw new Error('Feature not found');
 
-        let validSprintId: any = undefined;
-        if (effectiveSprintId) {
-          if (!mongoose.Types.ObjectId.isValid(effectiveSprintId)) throw new Error('Invalid sprintId');
-          validSprintId = new mongoose.Types.ObjectId(effectiveSprintId);
+        let validSprintId: mongoose.Types.ObjectId | undefined = undefined;
+        if (sprintId) {
+          if (!mongoose.Types.ObjectId.isValid(sprintId)) throw new Error('Invalid sprintId');
+          validSprintId = new mongoose.Types.ObjectId(sprintId);
         }
 
-        let validAssignedUser: any = user?._id;
-        if (effectiveAssigneeId) {
-          if (!mongoose.Types.ObjectId.isValid(effectiveAssigneeId)) throw new Error('Invalid assignedUserId');
-          validAssignedUser = new mongoose.Types.ObjectId(effectiveAssigneeId);
+        let validAssignedUser: mongoose.Types.ObjectId | undefined = user?._id;
+        if (assignedUserId) {
+          if (!mongoose.Types.ObjectId.isValid(assignedUserId)) throw new Error('Invalid assignedUserId');
+          validAssignedUser = new mongoose.Types.ObjectId(assignedUserId);
         }
 
         const created = await UserStoryService.create({
-          title: effectiveTitle,
-          description: description?.trim() || '',
-          storyPoints: effectivePoints,
-          featureId: new mongoose.Types.ObjectId(effectiveFeatureId) as any,
+          title,
+          description,
+          storyPoints,
+          featureId: new mongoose.Types.ObjectId(featureId),
           sprintId: validSprintId,
           assignedUser: validAssignedUser,
           status: 'To Do'
@@ -168,7 +207,9 @@ export class McpToolExecutor {
       }
 
       case 'update_user_story_status': {
-        const { id, status } = safeArgs;
+        const id = typeof safeArgs['id'] === 'string' ? safeArgs['id'] : undefined;
+        const status = typeof safeArgs['status'] === 'string' ? safeArgs['status'] : undefined;
+
         if (!id || !mongoose.Types.ObjectId.isValid(id)) throw new Error('Valid user story ID is required');
         if (!status || !['To Do', 'In Progress', 'Blocked', 'Waiting for MR', 'Done'].includes(status)) {
           throw new Error('Valid status is required ("To Do", "In Progress", "Blocked", "Waiting for MR", "Done")');
@@ -183,10 +224,10 @@ export class McpToolExecutor {
       }
 
       case 'list_features': {
-        const { epicId } = safeArgs;
-        const filter: any = {};
-        if (epicId && typeof epicId === 'string' && mongoose.Types.ObjectId.isValid(epicId)) {
-          filter.epicId = epicId;
+        const epicId = typeof safeArgs['epicId'] === 'string' ? safeArgs['epicId'] : undefined;
+        const filter: Record<string, unknown> = {};
+        if (epicId && mongoose.Types.ObjectId.isValid(epicId)) {
+          filter['epicId'] = new mongoose.Types.ObjectId(epicId);
         }
         const features = await FeatureService.getAll(filter);
         const leanFeatures = features.map(toFeatureSummaryDTO);

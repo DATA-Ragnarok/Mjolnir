@@ -3,7 +3,7 @@ import { User as UserType } from '../models/User.js';
 import { McpSessionManager } from './mcp/sessionManager.js';
 import { MCP_TOOLS } from './mcp/toolDefinitions.js';
 import { McpToolExecutor } from './mcp/toolExecutor.js';
-import { McpSession } from './mcp/types.js';
+import { McpSession, JsonRpcRequest, JsonRpcResponse } from './mcp/types.js';
 
 export type { McpSession };
 
@@ -20,11 +20,11 @@ export class McpServerService {
     McpSessionManager.removeSession(sessionId);
   }
 
-  static sendSseEvent(sessionId: string, event: string, data: any) {
+  static sendSseEvent(sessionId: string, event: string, data: unknown) {
     McpSessionManager.sendSseEvent(sessionId, event, data);
   }
 
-  static async handleJsonRpc(message: any, user: UserType, _sessionId?: string): Promise<any> {
+  static async handleJsonRpc(message: JsonRpcRequest, user: UserType, _sessionId?: string): Promise<JsonRpcResponse | null> {
     const { jsonrpc, id, method, params } = message || {};
 
     if (!jsonrpc || jsonrpc !== '2.0') {
@@ -40,7 +40,7 @@ export class McpServerService {
         case 'initialize': {
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             result: {
               protocolVersion: '2024-11-05',
               capabilities: {
@@ -61,7 +61,7 @@ export class McpServerService {
         case 'ping': {
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             result: {}
           };
         }
@@ -69,7 +69,7 @@ export class McpServerService {
         case 'tools/list': {
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             result: {
               tools: MCP_TOOLS
             }
@@ -77,11 +77,11 @@ export class McpServerService {
         }
 
         case 'tools/call': {
-          const { name, arguments: toolArgs = {} } = params || {};
+          const { name = '', arguments: toolArgs = {} } = params || {};
           const toolResult = await McpToolExecutor.executeTool(name, toolArgs, user);
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             result: {
               content: [
                 {
@@ -97,21 +97,22 @@ export class McpServerService {
         default: {
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             error: { code: -32601, message: `Method not found: ${method}` }
           };
         }
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error executing tool';
       if (method === 'tools/call') {
         return {
           jsonrpc: '2.0',
-          id,
+          id: id ?? null,
           result: {
             content: [
               {
                 type: 'text',
-                text: error.message || 'Error executing tool'
+                text: errorMessage
               }
             ],
             isError: true
@@ -121,13 +122,13 @@ export class McpServerService {
 
       return {
         jsonrpc: '2.0',
-        id,
-        error: { code: -32000, message: error.message || 'Internal error' }
+        id: id ?? null,
+        error: { code: -32000, message: errorMessage }
       };
     }
   }
 
-  static async executeTool(name: string, args: any, user: UserType): Promise<any> {
+  static async executeTool(name: string, args: Record<string, unknown> | undefined, user: UserType): Promise<unknown> {
     return McpToolExecutor.executeTool(name, args, user);
   }
 }

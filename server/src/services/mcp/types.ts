@@ -10,7 +10,7 @@ export type McpSession = {
 
 export type ToolInputSchema = {
   type: 'object';
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
   required?: string[];
 };
 
@@ -38,7 +38,7 @@ export type UserStoryDetailDTO = {
   status: string;
   featureId: string;
   sprintId?: string;
-  assignedUser?: any;
+  assignedUser?: string | { _id: string; name?: string; email?: string };
 };
 
 export type FeatureSummaryDTO = {
@@ -72,4 +72,34 @@ export type UserProfileDTO = {
   name: string;
   email: string;
   isAdmin: boolean;
+};
+
+export type JsonRpcRequest = {
+  jsonrpc: string;
+  id?: string | number | null;
+  method: string;
+  params?: {
+    name?: string;
+    arguments?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+};
+
+export type JsonRpcResponse = {
+  jsonrpc: '2.0';
+  id: string | number | null;
+  result?: {
+    content?: Array<{ type: string; text: string }>;
+    tools?: McpToolDefinition[];
+    isError?: boolean;
+    protocolVersion?: string;
+    capabilities?: Record<string, unknown>;
+    serverInfo?: { name: string; version: string };
+    [key: string]: unknown;
+  };
+  error?: {
+    code: number;
+    message: string;
+    data?: unknown;
+  };
 };

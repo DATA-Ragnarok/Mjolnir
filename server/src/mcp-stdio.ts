@@ -32,7 +32,7 @@ async function main() {
       if (response !== null) {
         process.stdout.write(JSON.stringify(response) + '\n');
       }
-    } catch (e: any) {
+    } catch (_e) {
       process.stdout.write(JSON.stringify({
         jsonrpc: '2.0',
         id: null,

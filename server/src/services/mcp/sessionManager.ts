@@ -5,7 +5,11 @@ import { McpSession } from './types.js';
 
 const sessions = new Map<string, McpSession>();
 
-(global as any).__mcpGetSession = (sessionId: string) => sessions.get(sessionId);
+declare global {
+  var __mcpGetSession: ((sessionId: string) => McpSession | undefined) | undefined;
+}
+
+globalThis.__mcpGetSession = (sessionId: string) => sessions.get(sessionId);
 
 export class McpSessionManager {
   static createSession(res: Response, user: UserType): string {
@@ -27,7 +31,7 @@ export class McpSessionManager {
     sessions.delete(sessionId);
   }
 
-  static sendSseEvent(sessionId: string, event: string, data: any) {
+  static sendSseEvent(sessionId: string, event: string, data: unknown) {
     const session = sessions.get(sessionId);
     if (session && !session.res.writableEnded) {
       session.res.write(`event: ${event}\ndata: ${typeof data === 'string' ? data : JSON.stringify(data)}\n\n`);

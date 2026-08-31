@@ -63,11 +63,12 @@ const handleMessages = async (req: Request, res: Response) => {
     }
 
     return res.json(rpcResponse);
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal error';
     res.status(500).json({
       jsonrpc: '2.0',
       id: req.body?.id ?? null,
-      error: { code: -32000, message: error.message || 'Internal error' }
+      error: { code: -32000, message }
     });
   }
 };
