@@ -1,8 +1,8 @@
 import React from 'react';
 import { Hash, Zap, Rocket, Flame, Target, Trophy } from 'lucide-react';
 
-const DevilIcon: React.FC<{ size?: number; className?: string }> = ({ size = 18, className = '' }) => (
-  <span style={{ fontSize: size }} className={className}>😈</span>
+const DevilIcon: React.FC<{ size?: string | number; className?: string }> = ({ size = 18, className = '' }) => (
+  <span style={{ fontSize: typeof size === 'number' ? `${size}px` : size }} className={className}>😈</span>
 );
 
 type StoryPointsSelectProps = {
@@ -10,7 +10,15 @@ type StoryPointsSelectProps = {
   onChange: (points: number) => void;
 };
 
-const POINT_OPTIONS = [
+type PointOption = {
+  value: number;
+  label: string;
+  icon: React.ComponentType<{ size?: string | number; className?: string }>;
+  color: string;
+  bg: string;
+};
+
+const POINT_OPTIONS: PointOption[] = [
   { value: 1, label: '1 Point', icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50' },
   { value: 3, label: '3 Points', icon: Rocket, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   { value: 5, label: '5 Points', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
@@ -42,7 +50,7 @@ const StoryPointsSelect: React.FC<StoryPointsSelectProps> = ({ value, onChange }
           ))}
         </select>
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          {React.createElement(currentOption.icon as React.ComponentType<any>, { 
+          {React.createElement(currentOption.icon, { 
             size: 18, 
             className: currentOption.color 
           })}

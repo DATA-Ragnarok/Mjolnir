@@ -193,7 +193,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({
   };
 
   Object.values(localColumns).flat().forEach(story => {
-    const uid = getUserId(story.assignedUser as any);
+    const uid = getUserId(story.assignedUser);
     if (!uid) return;
 
     if (story.status === 'In Progress') {

@@ -7,6 +7,10 @@ export class UserStoryService {
     return await UserStoryDAL.find(filters);
   }
 
+  static async getById(id: string) {
+    return await UserStoryDAL.findById(id);
+  }
+
   static async create(data: Partial<UserStoryType>) {
     const story = await UserStoryDAL.create(data);
     

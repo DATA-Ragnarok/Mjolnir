@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useModal } from '../hooks/useModal';
+import { ApiKeyModalContent } from '../components/ApiKeyModal/ApiKeyModalContent';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { openModal } = useModal();
   const location = useLocation();
   
   const tabs = [
@@ -22,6 +25,13 @@ const DashboardLayout: React.FC = () => {
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <Link to="/epics" className="text-xl font-bold tracking-tight text-indigo-600">🔨 Mjolnir</Link>
         <div className="flex items-center space-x-4">
+          <button
+            onClick={() => openModal(<ApiKeyModalContent />, { maxWidth: '5xl', ribbonColor: 'bg-indigo-600' })}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-sm font-medium transition-colors shadow-sm"
+          >
+            <span>🔑</span>
+            <span>API Key</span>
+          </button>
           <div className="flex items-center space-x-3">
             <span className="text-sm font-medium text-gray-700">{user?.name}</span>
             <button 

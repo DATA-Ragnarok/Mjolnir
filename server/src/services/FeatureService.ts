@@ -6,6 +6,10 @@ export class FeatureService {
     return await FeatureDAL.findWithProgress(filters);
   }
 
+  static async getById(id: string) {
+    return await FeatureDAL.findById(id);
+  }
+
   static async create(data: Partial<FeatureType>) {
     return await FeatureDAL.create(data);
   }
