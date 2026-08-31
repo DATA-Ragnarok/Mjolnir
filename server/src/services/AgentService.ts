@@ -4,56 +4,56 @@ import { FeatureService } from './FeatureService.js';
 import { EpicService } from './EpicService.js';
 import { SprintService } from './SprintService.js';
 import { UserService } from './UserService.js';
-import { UserStoryStatus } from '../models/UserStory.js';
+import { UserStory as UserStoryType, UserStoryStatus } from '../models/UserStory.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 const ALLOWED_STATUSES: UserStoryStatus[] = ['To Do', 'In Progress', 'Blocked', 'Waiting for MR', 'Done'];
 
-export interface ListUserStoriesQuery {
+export type ListUserStoriesQuery = {
   assignedUser?: string;
   sprint?: string;
   featureId?: string;
   status?: string;
   limit?: string | number;
-}
+};
 
-export interface CreateUserStoryDTO {
+export type CreateUserStoryDTO = {
   title?: string;
   description?: string;
   storyPoints?: number;
   featureId?: string;
   sprintId?: string;
   assignedUserId?: string;
-}
+};
 
 export class AgentService {
   static async listUserStories(query: ListUserStoriesQuery, currentUserId?: string) {
     const { assignedUser = 'me', sprint = 'active', featureId, status, limit = 50 } = query;
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
 
     if (assignedUser === 'me') {
       if (currentUserId && mongoose.Types.ObjectId.isValid(currentUserId)) {
-        filter.assignedUser = new mongoose.Types.ObjectId(currentUserId);
+        filter['assignedUser'] = new mongoose.Types.ObjectId(currentUserId);
       }
     } else if (assignedUser !== 'all' && typeof assignedUser === 'string' && mongoose.Types.ObjectId.isValid(assignedUser)) {
-      filter.assignedUser = new mongoose.Types.ObjectId(assignedUser);
+      filter['assignedUser'] = new mongoose.Types.ObjectId(assignedUser);
     }
 
     if (sprint === 'active') {
       const activeSprint = await SprintService.getActiveSprint();
-      filter.sprintId = activeSprint ? activeSprint._id : null;
+      filter['sprintId'] = activeSprint ? activeSprint._id : null;
     } else if (sprint === 'backlog') {
-      filter.sprintId = { $in: [null, undefined] };
+      filter['sprintId'] = { $in: [null, undefined] };
     } else if (sprint !== 'all' && typeof sprint === 'string' && mongoose.Types.ObjectId.isValid(sprint)) {
-      filter.sprintId = new mongoose.Types.ObjectId(sprint);
+      filter['sprintId'] = new mongoose.Types.ObjectId(sprint);
     }
 
     if (featureId && typeof featureId === 'string' && mongoose.Types.ObjectId.isValid(featureId)) {
-      filter.featureId = new mongoose.Types.ObjectId(featureId);
+      filter['featureId'] = new mongoose.Types.ObjectId(featureId);
     }
 
     if (status && typeof status === 'string' && ALLOWED_STATUSES.includes(status as UserStoryStatus)) {
-      filter.status = status;
+      filter['status'] = status as UserStoryStatus;
     }
 
     const parsedLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
@@ -92,7 +92,7 @@ export class AgentService {
       throw new AppError(404, 'Feature not found');
     }
 
-    let validSprintId: any = undefined;
+    let validSprintId: mongoose.Types.ObjectId | undefined = undefined;
     if (sprintId) {
       if (!mongoose.Types.ObjectId.isValid(sprintId)) {
         throw new AppError(400, 'Invalid sprintId');
@@ -100,7 +100,7 @@ export class AgentService {
       validSprintId = new mongoose.Types.ObjectId(sprintId);
     }
 
-    let validAssignedUser: any = currentUserId ? new mongoose.Types.ObjectId(currentUserId) : undefined;
+    let validAssignedUser: mongoose.Types.ObjectId | undefined = currentUserId ? new mongoose.Types.ObjectId(currentUserId) : undefined;
     if (assignedUserId) {
       if (!mongoose.Types.ObjectId.isValid(assignedUserId)) {
         throw new AppError(400, 'Invalid assignedUserId');
@@ -112,14 +112,14 @@ export class AgentService {
       title: title.trim(),
       description: description?.trim() || '',
       storyPoints,
-      featureId: new mongoose.Types.ObjectId(featureId) as any,
+      featureId: new mongoose.Types.ObjectId(featureId),
       sprintId: validSprintId,
       assignedUser: validAssignedUser,
       status: 'To Do'
     });
   }
 
-  static async updateUserStoryStatus(id: string, body: any) {
+  static async updateUserStoryStatus(id: string, body: Record<string, unknown>) {
     const { status, ...otherFields } = body || {};
 
     if (Object.keys(otherFields).length > 0) {
@@ -130,11 +130,11 @@ export class AgentService {
       throw new AppError(400, 'Invalid user story ID');
     }
 
-    if (!status || !ALLOWED_STATUSES.includes(status as UserStoryStatus)) {
+    if (!status || typeof status !== 'string' || !ALLOWED_STATUSES.includes(status as UserStoryStatus)) {
       throw new AppError(400, `Invalid status. Allowed statuses: ${ALLOWED_STATUSES.join(', ')}`);
     }
 
-    const updated = await UserStoryService.update(id, { status });
+    const updated = await UserStoryService.update(id, { status: status as UserStoryStatus });
     if (!updated) {
       throw new AppError(404, 'User story not found');
     }
@@ -146,9 +146,9 @@ export class AgentService {
   }
 
   static async listFeatures(epicId?: string) {
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     if (epicId && typeof epicId === 'string' && mongoose.Types.ObjectId.isValid(epicId)) {
-      filter.epicId = epicId;
+      filter['epicId'] = new mongoose.Types.ObjectId(epicId);
     }
     return await FeatureService.getAll(filter);
   }
