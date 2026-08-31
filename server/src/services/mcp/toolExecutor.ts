@@ -6,11 +6,73 @@ import { SprintService } from '../SprintService.js';
 import { UserService } from '../UserService.js';
 import { User as UserType } from '../../models/User.js';
 import { UserStoryStatus } from '../../models/UserStory.js';
+import {
+  UserStorySummaryDTO,
+  UserStoryDetailDTO,
+  FeatureSummaryDTO,
+  EpicSummaryDTO,
+  SprintSummaryDTO,
+  TeamMemberDTO,
+  UserProfileDTO
+} from './types.js';
+
+const toUserStorySummaryDTO = (s: any): UserStorySummaryDTO => ({
+  _id: s._id,
+  title: s.title,
+  status: s.status,
+  storyPoints: s.storyPoints,
+  featureId: s.featureId,
+  sprintId: s.sprintId || undefined,
+  assignedUser: s.assignedUser ? (typeof s.assignedUser === 'object' && s.assignedUser.name ? s.assignedUser.name : s.assignedUser) : undefined
+});
+
+const toUserStoryDetailDTO = (s: any): UserStoryDetailDTO => ({
+  _id: s._id,
+  title: s.title,
+  description: s.description || '',
+  storyPoints: s.storyPoints,
+  status: s.status,
+  featureId: s.featureId,
+  sprintId: s.sprintId,
+  assignedUser: s.assignedUser
+});
+
+const toFeatureSummaryDTO = (f: any): FeatureSummaryDTO => ({
+  _id: f._id,
+  title: f.title,
+  status: f.status,
+  epicId: f.epicId
+});
+
+const toEpicSummaryDTO = (e: any): EpicSummaryDTO => ({
+  _id: e._id,
+  title: e.title,
+  status: e.status
+});
+
+const toSprintSummaryDTO = (s: any): SprintSummaryDTO => ({
+  _id: s._id,
+  name: s.name,
+  startDate: s.startDate,
+  endDate: s.endDate
+});
+
+const toTeamMemberDTO = (m: any): TeamMemberDTO => ({
+  _id: m._id,
+  name: m.name,
+  email: m.email
+});
+
+const toUserProfileDTO = (u: any): UserProfileDTO => ({
+  _id: u._id,
+  name: u.name,
+  email: u.email,
+  isAdmin: u.isAdmin
+});
 
 export class McpToolExecutor {
-  static async executeTool(rawName: string, args: any, user: UserType): Promise<any> {
+  static async executeTool(name: string, args: any, user: UserType): Promise<any> {
     const safeArgs = args && typeof args === 'object' && !Array.isArray(args) ? args : {};
-    const name = rawName.replace(/^mjolnir_/, '');
 
     switch (name) {
       case 'list_user_stories': {
@@ -42,17 +104,7 @@ export class McpToolExecutor {
 
         const parsedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
         const stories = await UserStoryService.getAll(filter);
-        const sliced = stories.slice(0, parsedLimit);
-
-        const userStories = sliced.map((s: any) => ({
-          _id: s._id,
-          title: s.title,
-          status: s.status,
-          storyPoints: s.storyPoints,
-          featureId: s.featureId,
-          sprintId: s.sprintId || undefined,
-          assignedUser: s.assignedUser ? (typeof s.assignedUser === 'object' && s.assignedUser.name ? s.assignedUser.name : s.assignedUser) : undefined
-        }));
+        const userStories = stories.slice(0, parsedLimit).map(toUserStorySummaryDTO);
 
         return {
           count: userStories.length,
@@ -68,16 +120,7 @@ export class McpToolExecutor {
         const story = await UserStoryService.getById(id);
         if (!story) throw new Error('User story not found');
         return {
-          userStory: {
-            _id: story._id,
-            title: story.title,
-            description: story.description,
-            storyPoints: story.storyPoints,
-            status: story.status,
-            featureId: story.featureId,
-            sprintId: story.sprintId,
-            assignedUser: story.assignedUser
-          }
+          userStory: toUserStoryDetailDTO(story)
         };
       }
 
@@ -120,14 +163,7 @@ export class McpToolExecutor {
 
         return {
           message: 'User story created successfully',
-          userStory: {
-            _id: created._id,
-            title: created.title,
-            storyPoints: created.storyPoints,
-            status: created.status,
-            featureId: created.featureId,
-            sprintId: created.sprintId
-          }
+          userStory: toUserStoryDetailDTO(created)
         };
       }
 
@@ -142,11 +178,7 @@ export class McpToolExecutor {
         if (!updated) throw new Error('User story not found');
         return {
           message: 'User story status updated successfully',
-          userStory: {
-            _id: updated._id,
-            title: updated.title,
-            status: updated.status
-          }
+          userStory: toUserStoryDetailDTO(updated)
         };
       }
 
@@ -157,12 +189,7 @@ export class McpToolExecutor {
           filter.epicId = epicId;
         }
         const features = await FeatureService.getAll(filter);
-        const leanFeatures = features.map((f: any) => ({
-          _id: f._id,
-          title: f.title,
-          status: f.status,
-          epicId: f.epicId
-        }));
+        const leanFeatures = features.map(toFeatureSummaryDTO);
         return {
           count: leanFeatures.length,
           features: leanFeatures
@@ -171,11 +198,7 @@ export class McpToolExecutor {
 
       case 'list_epics': {
         const epics = await EpicService.getAll();
-        const leanEpics = epics.map((e: any) => ({
-          _id: e._id,
-          title: e.title,
-          status: e.status
-        }));
+        const leanEpics = epics.map(toEpicSummaryDTO);
         return {
           count: leanEpics.length,
           epics: leanEpics
@@ -185,22 +208,13 @@ export class McpToolExecutor {
       case 'get_active_sprint': {
         const activeSprint = await SprintService.getActiveSprint();
         return {
-          activeSprint: activeSprint ? {
-            _id: activeSprint._id,
-            name: activeSprint.name,
-            startDate: activeSprint.startDate,
-            endDate: activeSprint.endDate
-          } : null
+          activeSprint: activeSprint ? toSprintSummaryDTO(activeSprint) : null
         };
       }
 
       case 'list_team_members': {
         const members = await UserService.getApprovedUsers();
-        const leanMembers = members.map((m: any) => ({
-          _id: m._id,
-          name: m.name,
-          email: m.email
-        }));
+        const leanMembers = members.map(toTeamMemberDTO);
         return {
           count: leanMembers.length,
           members: leanMembers
@@ -209,17 +223,12 @@ export class McpToolExecutor {
 
       case 'get_current_user': {
         return {
-          user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin
-          }
+          user: toUserProfileDTO(user)
         };
       }
 
       default:
-        throw new Error(`Unknown tool: ${rawName}`);
+        throw new Error(`Unknown tool: ${name}`);
     }
   }
 }
