@@ -409,19 +409,19 @@ describe('SPEC-AGENT-INTEGRATION E2E Tests', () => {
       const tools = listRes.body.result.tools;
       expect(tools.length).toBe(9);
       const toolNames = tools.map((t: any) => t.name);
-      expect(toolNames).toContain('mjolnir_list_user_stories');
-      expect(toolNames).toContain('mjolnir_create_user_story');
-      expect(toolNames).toContain('mjolnir_update_user_story_status');
-      expect(toolNames).toContain('mjolnir_list_features');
-      expect(toolNames).toContain('mjolnir_list_epics');
-      expect(toolNames).toContain('mjolnir_get_active_sprint');
-      expect(toolNames).toContain('mjolnir_list_team_members');
-      expect(toolNames).toContain('mjolnir_get_current_user');
-      expect(toolNames).toContain('mjolnir_get_user_story');
+      expect(toolNames).toContain('list_user_stories');
+      expect(toolNames).toContain('create_user_story');
+      expect(toolNames).toContain('update_user_story_status');
+      expect(toolNames).toContain('list_features');
+      expect(toolNames).toContain('list_epics');
+      expect(toolNames).toContain('get_active_sprint');
+      expect(toolNames).toContain('list_team_members');
+      expect(toolNames).toContain('get_current_user');
+      expect(toolNames).toContain('get_user_story');
     });
 
     it('should execute MCP tool calls (create story, update status, list stories)', async () => {
-      // Call mjolnir_create_user_story
+      // Call create_user_story
       const createToolRes = await request(app)
         .post('/api/mcp/messages')
         .set('x-api-key', adminApiKey)
@@ -430,7 +430,7 @@ describe('SPEC-AGENT-INTEGRATION E2E Tests', () => {
           id: 10,
           method: 'tools/call',
           params: {
-            name: 'mjolnir_create_user_story',
+            name: 'create_user_story',
             arguments: {
               title: 'Story via MCP Tool',
               story_points: 3,
@@ -447,7 +447,7 @@ describe('SPEC-AGENT-INTEGRATION E2E Tests', () => {
       expect(createdStory.title).toBe('Story via MCP Tool');
       const newStoryId = createdStory._id;
 
-      // Call mjolnir_update_user_story_status
+      // Call update_user_story_status
       const updateToolRes = await request(app)
         .post('/api/mcp/messages')
         .set('x-api-key', adminApiKey)
@@ -456,7 +456,7 @@ describe('SPEC-AGENT-INTEGRATION E2E Tests', () => {
           id: 11,
           method: 'tools/call',
           params: {
-            name: 'mjolnir_update_user_story_status',
+            name: 'update_user_story_status',
             arguments: {
               id: newStoryId,
               status: 'In Progress'
@@ -470,7 +470,7 @@ describe('SPEC-AGENT-INTEGRATION E2E Tests', () => {
       const updatedStory = updatedData.userStory || updatedData;
       expect(updatedStory.status).toBe('In Progress');
 
-      // Call mjolnir_list_user_stories
+      // Call list_user_stories
       const listToolRes = await request(app)
         .post('/api/mcp/messages')
         .set('x-api-key', adminApiKey)
@@ -479,7 +479,7 @@ describe('SPEC-AGENT-INTEGRATION E2E Tests', () => {
           id: 12,
           method: 'tools/call',
           params: {
-            name: 'mjolnir_list_user_stories',
+            name: 'list_user_stories',
             arguments: {
               sprint: 'active'
             }
