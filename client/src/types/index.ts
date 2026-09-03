@@ -72,3 +72,40 @@ export type ApiKeyInfo = {
   createdAt: string;
   lastUsedAt?: string;
 };
+
+export type RetroNote = {
+  _id: string;
+  title: string;
+  description: string;
+  sprintId: string;
+  authorId: User | string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RetroActionItem = {
+  _id: string;
+  content: string;
+  sprintId: string;
+  status: 'To Do' | 'Done';
+  slot: number;
+};
+
+export type RetroStats = {
+  cycleTimeHours: number;
+  throughput: number;
+  blockedAging: Array<{
+    storyId: string;
+    title: string;
+    blockedHours: number;
+  }>;
+};
+
+export type RetroSessionData = {
+  sprint: Sprint;
+  previousSprint: Sprint | null;
+  previousActionItems: RetroActionItem[];
+  currentActionItems: RetroActionItem[];
+  notes: RetroNote[];
+  stats: RetroStats;
+};

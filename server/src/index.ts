@@ -11,6 +11,7 @@ import userRoutes from './routes/userRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import mcpRoutes from './routes/mcpRoutes.js';
 import apiKeyRoutes from './routes/apiKeyRoutes.js';
+import retroRoutes from './routes/retroRoutes.js';
 import { AppError } from './middleware/errorHandler.js';
 import { SprintService } from './services/SprintService.js';
 
@@ -38,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api/mcp', mcpRoutes);
+app.use('/api/retro', retroRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

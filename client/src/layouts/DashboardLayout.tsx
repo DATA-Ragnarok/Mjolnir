@@ -12,11 +12,13 @@ const DashboardLayout: React.FC = () => {
   const tabs = [
     { name: 'Epics', path: '/epics' },
     { name: 'Features', path: '/features' },
-    { name: 'Sprints', path: '/sprints' }
+    { name: 'Sprints', path: '/sprints' },
+    { name: 'Retro', path: '/retro' }
   ];
 
   const isActive = (path: string) => {
     if (path === '/epics' && location.pathname.startsWith('/epics')) return true;
+    if (path === '/retro' && location.pathname.startsWith('/retro')) return true;
     return location.pathname === path;
   };
 

@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage'
 import EpicsPage from './pages/EpicsPage'
 import FeaturesPage from './pages/FeaturesPage'
 import SprintsPage from './pages/SprintsPage'
+import RetroPage from './pages/RetroPage'
+import RetroSessionPage from './pages/RetroSessionPage'
 import DashboardLayout from './layouts/DashboardLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -38,6 +40,8 @@ function App() {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/features/:featureId" element={<FeaturesPage />} />
         <Route path="/sprints" element={<SprintsPage />} />
+        <Route path="/retro" element={<RetroPage />} />
+        <Route path="/retro/session/:sprintId" element={<RetroSessionPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/epics" replace />} />
