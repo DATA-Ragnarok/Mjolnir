@@ -26,18 +26,6 @@ function toSlots(items: RetroActionItem[]) {
     return slots;
 }
 
-function toStatuses(items: RetroActionItem[]): RetroActionItemStatus[] {
-    const statuses: RetroActionItemStatus[] = ['To Do', 'To Do', 'To Do'];
-
-    for (const item of items) {
-        if (item.slot >= 0 && item.slot <= 2 && ['To Do', 'Done', 'Ignored'].includes(item.status)) {
-            statuses[item.slot] = item.status as RetroActionItemStatus;
-        }
-    }
-
-    return statuses;
-}
-
 function formatDurationAsDays(hours: number) {
     const days = hours / 8;
     const wholeDays = Math.floor(days);
@@ -83,20 +71,25 @@ const RetroSessionPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [slots, setSlots] = useState<string[]>(['', '', '']);
-    const [statuses, setStatuses] = useState<RetroActionItemStatus[]>(['To Do', 'To Do', 'To Do']);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+    const [previousItemStatuses, setPreviousItemStatuses] = useState<Record<string, RetroActionItemStatus>>({});
 
     const canGoNext = step < 4;
+
+    const reviewedPreviousItems = useMemo(
+        () => sessionData?.previousActionItems.filter((item) => item.content.trim().length > 0) ?? [],
+        [sessionData],
+    );
 
     const filledSlotCount = useMemo(
         () => slots.filter((slot) => slot.trim().length > 0).length,
         [slots],
     );
 
-    const allFilledSlotsHaveStatus = useMemo(
-        () => slots.every((slot, index) => slot.trim().length === 0 || Boolean(statuses[index])),
-        [slots, statuses],
+    const allPreviousItemsReviewed = useMemo(
+        () => reviewedPreviousItems.length === 0 || reviewedPreviousItems.every((item) => Boolean(previousItemStatuses[item._id])),
+        [reviewedPreviousItems, previousItemStatuses],
     );
 
     const loadSession = async () => {
@@ -127,10 +120,16 @@ const RetroSessionPage: React.FC = () => {
     useEffect(() => {
         if (!sessionData) return;
         setSlots(toSlots(sessionData.currentActionItems));
-        setStatuses(toStatuses(sessionData.currentActionItems));
+        setPreviousItemStatuses({});
     }, [sessionData]);
 
     const handleNext = () => {
+        if (step === 1 && !allPreviousItemsReviewed) {
+            setSaveError('Select a state for every previous action item before continuing.');
+            return;
+        }
+
+        setSaveError(null);
         if (step < 4) setStep((current) => (current + 1) as Step);
     };
 
@@ -142,8 +141,8 @@ const RetroSessionPage: React.FC = () => {
         setSlots((current) => current.map((slot, slotIndex) => (slotIndex === index ? value : slot)));
     };
 
-    const handleStatusChange = (index: number, value: RetroActionItemStatus) => {
-        setStatuses((current) => current.map((status, slotIndex) => (slotIndex === index ? value : status)));
+    const handlePreviousStatusChange = (itemId: string, value: RetroActionItemStatus) => {
+        setPreviousItemStatuses((current) => ({ ...current, [itemId]: value }));
     };
 
     const saveActionItems = async () => {
@@ -155,15 +154,10 @@ const RetroSessionPage: React.FC = () => {
             return;
         }
 
-        if (!allFilledSlotsHaveStatus) {
-            setSaveError('Select a state for each filled action item before saving.');
-            return;
-        }
-
         try {
             await retroService.saveActionItems(
                 sprintId,
-                slots.map((content, index) => ({ content, status: statuses[index] ?? 'To Do' })),
+                slots.map((content) => ({ content, status: 'To Do' })),
             );
             setSaveSuccess('Action items saved for next sprint.');
         } catch (actionItemError) {
@@ -237,28 +231,64 @@ const RetroSessionPage: React.FC = () => {
                 {step === 1 ? (
                     <div>
                         <h3 className="text-lg font-semibold text-slate-900">Past Retro Action Items</h3>
+                        <p className="mt-1 text-sm text-slate-600">Mark each action item as nailed, still to do, or ignore it from now on.</p>
                         {sessionData.previousSprint ? (
-                            <p className="mt-1 text-sm text-slate-600">From sprint: {sessionData.previousSprint.name}</p>
+                            <p className="mt-2 text-sm text-slate-600">From sprint: {sessionData.previousSprint.name}</p>
                         ) : (
-                            <p className="mt-1 text-sm text-slate-600">No previous sprint found.</p>
+                            <p className="mt-2 text-sm text-slate-600">No previous sprint found.</p>
                         )}
 
                         <ul className="mt-4 space-y-3">
-                            {sessionData.previousActionItems.filter((item) => item.content.trim().length > 0).length === 0 ? (
+                            {reviewedPreviousItems.length === 0 ? (
                                 <li className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
                                     No previous action items recorded.
                                 </li>
                             ) : (
-                                sessionData.previousActionItems
-                                    .filter((item) => item.content.trim().length > 0)
-                                    .map((item) => (
+                                reviewedPreviousItems.map((item) => {
+                                    const selectedStatus = previousItemStatuses[item._id];
+                                    const toggleOptions: Array<{ value: RetroActionItemStatus; label: string; symbol: string }> = [
+                                        { value: 'Done', label: 'Done', symbol: 'V' },
+                                        { value: 'To Do', label: 'To Do', symbol: 'X' },
+                                        { value: 'Ignored', label: 'Ignore', symbol: 'O' },
+                                    ];
+
+                                    return (
                                         <li
                                             key={item._id}
-                                            className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 shadow-sm"
+                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm"
                                         >
-                                            {item.content}
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                <p className="text-sm leading-6 text-slate-700">{item.content}</p>
+                                                <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+                                                    {toggleOptions.map((option) => {
+                                                        const isSelected = selectedStatus === option.value;
+
+                                                        return (
+                                                            <button
+                                                                key={`${item._id}-${option.value}`}
+                                                                type="button"
+                                                                onClick={() => handlePreviousStatusChange(item._id, option.value)}
+                                                                className={[
+                                                                    'flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition',
+                                                                    isSelected
+                                                                        ? option.value === 'Done'
+                                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                                            : option.value === 'Ignored'
+                                                                              ? 'bg-amber-100 text-amber-700'
+                                                                              : 'bg-slate-200 text-slate-700'
+                                                                        : 'text-slate-500 hover:bg-slate-100',
+                                                                ].join(' ')}
+                                                            >
+                                                                <span className="text-sm font-black">{option.symbol}</span>
+                                                                <span>{option.label}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </li>
-                                    ))
+                                    );
+                                })
                             )}
                         </ul>
                     </div>
@@ -344,48 +374,18 @@ const RetroSessionPage: React.FC = () => {
                 {step === 4 ? (
                     <div>
                         <h3 className="text-lg font-semibold text-slate-900">Create Action Items</h3>
-                        <p className="mt-1 text-sm text-slate-600">Exactly 3 slots. At least 2 slots are required.</p>
+                        <p className="mt-1 text-sm text-slate-600">Exactly 3 slots. At least 2 slots are required. New items default to To Do.</p>
 
-                        <div className="mt-4 space-y-4">
+                        <div className="mt-4 space-y-3">
                             {slots.map((slot, index) => (
-                                <div key={`slot-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                    <label className="mb-2 block text-sm font-medium text-slate-700">Action Item {index + 1}</label>
+                                <div key={`slot-${index}`}>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Action Item {index + 1}</label>
                                     <input
                                         value={slot}
                                         onChange={(event) => handleSlotChange(index, event.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-indigo-500"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white"
                                         placeholder="Define an improvement action"
                                     />
-
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        {[
-                                            { value: 'Done', symbol: 'V', description: 'Done' },
-                                            { value: 'To Do', symbol: 'X', description: 'To Do' },
-                                            { value: 'Ignored', symbol: 'O', description: 'Ignore' },
-                                        ].map((option) => {
-                                            const isSelected = statuses[index] === option.value;
-                                            return (
-                                                <button
-                                                    key={`${index}-${option.value}`}
-                                                    type="button"
-                                                    onClick={() => handleStatusChange(index, option.value as RetroActionItemStatus)}
-                                                    className={[
-                                                        'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition',
-                                                        isSelected
-                                                            ? option.value === 'Done'
-                                                                ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
-                                                                : option.value === 'Ignored'
-                                                                  ? 'border-amber-200 bg-amber-100 text-amber-700'
-                                                                  : 'border-slate-300 bg-slate-200 text-slate-700'
-                                                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300',
-                                                    ].join(' ')}
-                                                >
-                                                    <span className="text-sm font-black">{option.symbol}</span>
-                                                    <span>{option.description}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -400,7 +400,7 @@ const RetroSessionPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={saveActionItems}
-                            disabled={!allFilledSlotsHaveStatus || filledSlotCount < 2}
+                            disabled={filledSlotCount < 2}
                             className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
                             Save Action Items
@@ -423,17 +423,18 @@ const RetroSessionPage: React.FC = () => {
                     <button
                         type="button"
                         onClick={handleNext}
-                        className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                        disabled={step === 1 && !allPreviousItemsReviewed}
+                        className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
                         Next
                     </button>
                 ) : (
                     <button
                         type="button"
-                        disabled={!allFilledSlotsHaveStatus || filledSlotCount < 2}
+                        disabled={filledSlotCount < 2}
                         onClick={() => {
-                            if (!allFilledSlotsHaveStatus || filledSlotCount < 2) {
-                                setSaveError('Select a state for each filled action item before finishing.');
+                            if (filledSlotCount < 2) {
+                                setSaveError('Add at least 2 action items before finishing.');
                                 return;
                             }
                             window.location.href = '/retro';
