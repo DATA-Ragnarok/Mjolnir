@@ -253,8 +253,8 @@ const RetroSessionPage: React.FC = () => {
                                     active
                                         ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
                                         : complete
-                                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                          : 'border-slate-200 bg-slate-50 text-slate-500',
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                            : 'border-slate-200 bg-slate-50 text-slate-500',
                                     stepValue > step ? 'cursor-not-allowed opacity-60' : '',
                                 ].join(' ')}
                             >
@@ -290,25 +290,25 @@ const RetroSessionPage: React.FC = () => {
                                         activeClass: string;
                                         inactiveClass: string;
                                     }> = [
-                                        {
-                                            value: 'Done',
-                                            icon: <Check size={16} strokeWidth={3} />,
-                                            activeClass: 'bg-emerald-100 text-emerald-700',
-                                            inactiveClass: 'text-slate-500 hover:bg-slate-100',
-                                        },
-                                        {
-                                            value: 'To Do',
-                                            icon: <X size={16} strokeWidth={3} />,
-                                            activeClass: 'bg-red-100 text-red-700',
-                                            inactiveClass: 'text-slate-500 hover:bg-slate-100',
-                                        },
-                                        {
-                                            value: 'Ignored',
-                                            icon: <Ban size={16} strokeWidth={3} />,
-                                            activeClass: 'bg-amber-100 text-amber-700',
-                                            inactiveClass: 'text-slate-500 hover:bg-slate-100',
-                                        },
-                                    ];
+                                            {
+                                                value: 'Done',
+                                                icon: <Check size={16} strokeWidth={3} />,
+                                                activeClass: 'bg-emerald-100 text-emerald-700',
+                                                inactiveClass: 'text-slate-500 hover:bg-slate-100',
+                                            },
+                                            {
+                                                value: 'To Do',
+                                                icon: <X size={16} strokeWidth={3} />,
+                                                activeClass: 'bg-red-100 text-red-700',
+                                                inactiveClass: 'text-slate-500 hover:bg-slate-100',
+                                            },
+                                            {
+                                                value: 'Ignored',
+                                                icon: <Ban size={16} strokeWidth={3} />,
+                                                activeClass: 'bg-amber-100 text-amber-700',
+                                                inactiveClass: 'text-slate-500 hover:bg-slate-100',
+                                            },
+                                        ];
 
                                     return (
                                         <li
