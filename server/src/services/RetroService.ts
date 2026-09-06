@@ -4,6 +4,7 @@ import { RetroNoteDAL } from '../dal/RetroNoteDAL.js';
 import { RetroActionItemDAL } from '../dal/RetroActionItemDAL.js';
 import { UserStory, UserStoryStatusHistoryEntry } from '../models/UserStory.js';
 import { RETRO_ACTION_ITEM_STATUSES, RetroActionItemStatus } from '../models/RetroActionItem.js';
+import { RetroNoteCategory } from '../models/RetroNote.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 type SprintStats = {
@@ -40,11 +41,11 @@ export class RetroService {
         return await RetroNoteDAL.findBySprintId(sprintId);
     }
 
-    static async createNote(data: { title: string; description: string; sprintId: string; authorId: string }) {
+    static async createNote(data: { title: string; description: string; category?: RetroNoteCategory; sprintId: string; authorId: string }) {
         return await RetroNoteDAL.create(data);
     }
 
-    static async updateNote(id: string, data: { title?: string; description?: string; sprintId?: string }) {
+    static async updateNote(id: string, data: { title?: string; description?: string; category?: RetroNoteCategory; sprintId?: string }) {
         return await RetroNoteDAL.update(id, data);
     }
 

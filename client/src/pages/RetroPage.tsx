@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, Layout, List } from 'lucide-react';
 import CollapsibleSection from '../components/CollapsibleSection';
 import RetroNoteModal from '../components/RetroNoteModal';
-import { RetroActionItem, RetroNote, Sprint } from '../types';
+import { RETRO_NOTE_CATEGORIES, RetroActionItem, RetroNote, RetroNoteCategory, Sprint } from '../types';
 import { retroService } from '../services/retroService';
 import { getInitialsFromName } from '../utils/initials';
 
@@ -29,6 +29,18 @@ function getAuthorName(note: RetroNote) {
 
     return note.authorId.name;
 }
+
+const getNoteCategoryStyles = (category: RetroNoteCategory) => {
+    switch (category) {
+        case 'Keep':
+            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        case 'Improve':
+            return 'border-amber-200 bg-amber-50 text-amber-700';
+        case 'Note':
+        default:
+            return 'border-slate-200 bg-slate-100 text-slate-700';
+    }
+};
 
 const RetroPage: React.FC = () => {
     const navigate = useNavigate();
@@ -131,6 +143,22 @@ const RetroPage: React.FC = () => {
         [actionItems],
     );
 
+    const orderedNotes = useMemo(
+        () =>
+            [...notes].sort((left, right) => {
+                const categoryOrder = new Map(RETRO_NOTE_CATEGORIES.map((category, index) => [category, index]));
+                const leftOrder = categoryOrder.get(left.category ?? 'Note') ?? Number.MAX_SAFE_INTEGER;
+                const rightOrder = categoryOrder.get(right.category ?? 'Note') ?? Number.MAX_SAFE_INTEGER;
+
+                if (leftOrder !== rightOrder) {
+                    return leftOrder - rightOrder;
+                }
+
+                return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+            }),
+        [notes],
+    );
+
     useEffect(() => {
         const initialize = async () => {
             setLoading(true);
@@ -206,7 +234,7 @@ const RetroPage: React.FC = () => {
         setModalState({ open: false, note: null });
     };
 
-    const handleSave = async (payload: { title: string; description: string; sprintId: string }) => {
+    const handleSave = async (payload: { title: string; description: string; category: RetroNoteCategory; sprintId: string }) => {
         if (modalState.note) {
             await retroService.updateNote(modalState.note._id, payload);
         } else {
@@ -345,9 +373,10 @@ const RetroPage: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {notes.map((note) => {
+                        {orderedNotes.map((note) => {
                             const authorName = getAuthorName(note);
                             const initials = getInitialsFromName(authorName);
+                            const category = note.category ?? 'Note';
 
                             return (
                                 <button
@@ -358,8 +387,8 @@ const RetroPage: React.FC = () => {
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <h3 className="text-base font-semibold text-slate-900">{note.title}</h3>
-                                        <span className="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
-                                            Note
+                                        <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${getNoteCategoryStyles(category)}`}>
+                                            {category}
                                         </span>
                                     </div>
 
@@ -441,6 +470,7 @@ const RetroPage: React.FC = () => {
                 sprints={sprints}
                 initialTitle={modalState.note?.title ?? ''}
                 initialDescription={modalState.note?.description ?? ''}
+                initialCategory={modalState.note?.category ?? 'Note'}
                 initialSprintId={modalState.note?.sprintId ?? selectedSprintId}
                 canDelete={Boolean(modalState.note)}
                 onClose={closeModal}

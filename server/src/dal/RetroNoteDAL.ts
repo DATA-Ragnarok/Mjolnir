@@ -1,8 +1,9 @@
-import RetroNote from '../models/RetroNote.js';
+import RetroNote, { RetroNoteCategory } from '../models/RetroNote.js';
 
 type RetroNoteCreateInput = {
     title: string;
     description: string;
+    category?: RetroNoteCategory;
     sprintId: string;
     authorId: string;
 };
@@ -10,6 +11,7 @@ type RetroNoteCreateInput = {
 type RetroNoteUpdateInput = {
     title?: string;
     description?: string;
+    category?: RetroNoteCategory;
     sprintId?: string;
 };
 

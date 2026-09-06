@@ -84,11 +84,13 @@ describe('Retro E2E Tests', () => {
             .send({
                 title: 'The good',
                 description: 'Delivery quality improved',
+                category: 'Keep',
                 sprintId: currentSprintId,
             });
 
         expect(createResponse.status).toBe(201);
         expect(createResponse.body.title).toBe('The good');
+        expect(createResponse.body.category).toBe('Keep');
 
         const listResponse = await request(app)
             .get(`/api/retro/notes?sprintId=${currentSprintId}`)
@@ -103,10 +105,11 @@ describe('Retro E2E Tests', () => {
         const updateResponse = await request(app)
             .put(`/api/retro/notes/${noteId}`)
             .set('Authorization', `Bearer ${token}`)
-            .send({ title: 'The better', description: 'Cycle time improved', sprintId: currentSprintId });
+            .send({ title: 'The better', description: 'Cycle time improved', category: 'Improve', sprintId: currentSprintId });
 
         expect(updateResponse.status).toBe(200);
         expect(updateResponse.body.title).toBe('The better');
+        expect(updateResponse.body.category).toBe('Improve');
 
         const deleteResponse = await request(app)
             .delete(`/api/retro/notes/${noteId}`)

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Sprint } from '../types';
+import { RETRO_NOTE_CATEGORIES, RetroNoteCategory, Sprint } from '../types';
 
 type RetroNoteModalProps = {
     isOpen: boolean;
     sprints: Sprint[];
     initialTitle?: string;
     initialDescription?: string;
+    initialCategory?: RetroNoteCategory;
     initialSprintId: string;
     canDelete: boolean;
     onClose: () => void;
-    onSave: (payload: { title: string; description: string; sprintId: string }) => Promise<void>;
+    onSave: (payload: { title: string; description: string; category: RetroNoteCategory; sprintId: string }) => Promise<void>;
     onDelete: () => Promise<void>;
 };
 
@@ -18,6 +19,7 @@ function RetroNoteModal({
     sprints,
     initialTitle = '',
     initialDescription = '',
+    initialCategory = 'Note',
     initialSprintId,
     canDelete,
     onClose,
@@ -26,6 +28,7 @@ function RetroNoteModal({
 }: RetroNoteModalProps) {
     const [title, setTitle] = useState(initialTitle);
     const [description, setDescription] = useState(initialDescription);
+    const [category, setCategory] = useState<RetroNoteCategory>(initialCategory);
     const [sprintId, setSprintId] = useState(initialSprintId);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,9 +37,10 @@ function RetroNoteModal({
         if (!isOpen) return;
         setTitle(initialTitle);
         setDescription(initialDescription);
+        setCategory(initialCategory);
         setSprintId(initialSprintId);
         setError(null);
-    }, [isOpen, initialTitle, initialDescription, initialSprintId]);
+    }, [isOpen, initialTitle, initialDescription, initialCategory, initialSprintId]);
 
     const isValid = useMemo(() => {
         return title.trim().length > 0 && description.trim().length > 0 && sprintId.length > 0;
@@ -51,7 +55,7 @@ function RetroNoteModal({
         setIsSubmitting(true);
         setError(null);
         try {
-            await onSave({ title: title.trim(), description: description.trim(), sprintId });
+            await onSave({ title: title.trim(), description: description.trim(), category, sprintId });
             onClose();
         } catch (saveError) {
             console.error(saveError);
@@ -102,6 +106,30 @@ function RetroNoteModal({
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
                             placeholder="Add context for discussion"
                         />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                            {RETRO_NOTE_CATEGORIES.map((option) => {
+                                const isSelected = category === option;
+                                return (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => setCategory(option)}
+                                        className={[
+                                            'rounded-lg border px-3 py-2 text-sm font-semibold transition',
+                                            isSelected
+                                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                                                : 'border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100',
+                                        ].join(' ')}
+                                    >
+                                        {option}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div>

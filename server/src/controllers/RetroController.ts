@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { RETRO_NOTE_CATEGORIES, RetroNoteCategory } from '../models/RetroNote.js';
 import { RetroService } from '../services/RetroService.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 
 const isValidObjectId = (value: string) => mongoose.Types.ObjectId.isValid(value);
+const isValidNoteCategory = (value: unknown): value is RetroNoteCategory =>
+    typeof value === 'string' && RETRO_NOTE_CATEGORIES.includes(value as RetroNoteCategory);
 
 export const getRetroBootstrap = asyncHandler(async (_req: Request, res: Response) => {
     const data = await RetroService.getRetroBootstrap();
@@ -21,14 +24,15 @@ export const getRetroNotes = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const createRetroNote = asyncHandler(async (req: Request, res: Response) => {
-    const { title, description, sprintId } = req.body as {
+    const { title, description, category, sprintId } = req.body as {
         title?: string;
         description?: string;
+        category?: string;
         sprintId?: string;
     };
 
-    if (!title?.trim() || !description?.trim() || !sprintId || !isValidObjectId(sprintId)) {
-        throw new AppError(400, 'title, description, and valid sprintId are required');
+    if (!title?.trim() || !description?.trim() || !sprintId || !isValidObjectId(sprintId) || !isValidNoteCategory(category)) {
+        throw new AppError(400, 'title, description, valid category, and valid sprintId are required');
     }
 
     const authorId = req.user?._id?.toString();
@@ -39,6 +43,7 @@ export const createRetroNote = asyncHandler(async (req: Request, res: Response) 
     const note = await RetroService.createNote({
         title: title.trim(),
         description: description.trim(),
+        category,
         sprintId,
         authorId,
     });
@@ -48,9 +53,10 @@ export const createRetroNote = asyncHandler(async (req: Request, res: Response) 
 
 export const updateRetroNote = asyncHandler(async (req: Request, res: Response) => {
     const noteId = req.params['id'] as string;
-    const { title, description, sprintId } = req.body as {
+    const { title, description, category, sprintId } = req.body as {
         title?: string;
         description?: string;
+        category?: string;
         sprintId?: string;
     };
 
@@ -62,9 +68,14 @@ export const updateRetroNote = asyncHandler(async (req: Request, res: Response) 
         throw new AppError(400, 'Invalid sprintId');
     }
 
+    if (category !== undefined && !isValidNoteCategory(category)) {
+        throw new AppError(400, 'Invalid retro note category');
+    }
+
     const note = await RetroService.updateNote(noteId, {
         ...(title !== undefined ? { title: title.trim() } : {}),
         ...(description !== undefined ? { description: description.trim() } : {}),
+        ...(category !== undefined ? { category: category as RetroNoteCategory } : {}),
         ...(sprintId !== undefined ? { sprintId } : {}),
     });
 

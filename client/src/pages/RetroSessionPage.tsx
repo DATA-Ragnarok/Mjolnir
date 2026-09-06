@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Ban, Check, Info, X } from 'lucide-react';
 import { useModal } from '../hooks/useModal';
-import { RetroActionItem, RetroActionItemStatus, RetroSessionData } from '../types';
+import { RETRO_NOTE_CATEGORIES, RetroActionItem, RetroActionItemStatus, RetroNoteCategory, RetroSessionData } from '../types';
 import { retroService } from '../services/retroService';
 
 type Step = 1 | 2 | 3 | 4;
@@ -91,6 +91,24 @@ const RetroSessionPage: React.FC = () => {
         () => reviewedPreviousItems.length === 0 || reviewedPreviousItems.every((item) => Boolean(previousItemStatuses[item._id])),
         [reviewedPreviousItems, previousItemStatuses],
     );
+
+    const groupedNotes = useMemo(() => {
+        const notesByCategory: Record<RetroNoteCategory, RetroSessionData['notes']> = {
+            Keep: [],
+            Improve: [],
+            Note: [],
+        };
+
+        for (const note of sessionData?.notes ?? []) {
+            const category = note.category ?? 'Note';
+            notesByCategory[category].push(note);
+        }
+
+        return RETRO_NOTE_CATEGORIES.map((category) => ({
+            category,
+            notes: notesByCategory[category],
+        }));
+    }, [sessionData]);
 
     const loadSession = async () => {
         if (!sprintId) {
@@ -403,21 +421,44 @@ const RetroSessionPage: React.FC = () => {
                 {step === 3 ? (
                     <div>
                         <h3 className="text-lg font-semibold text-slate-900">Discussion View</h3>
-                        <div className="mt-4 space-y-3">
-                            {sessionData.notes.length === 0 ? (
+                        <div className="mt-4 space-y-4">
+                            {groupedNotes.every(({ notes }) => notes.length === 0) ? (
                                 <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
                                     No discussion notes yet.
                                 </p>
                             ) : (
-                                sessionData.notes.map((note) => (
-                                    <article key={note._id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                                        <h4 className="text-base font-semibold text-slate-900">{note.title}</h4>
-                                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{note.description}</p>
-                                        <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
-                                            Author: {typeof note.authorId === 'string' ? 'Unknown' : note.authorId.name}
-                                        </p>
-                                    </article>
-                                ))
+                                groupedNotes.map(({ category, notes: categoryNotes }) => {
+                                    if (categoryNotes.length === 0) return null;
+
+                                    const badgeClass =
+                                        category === 'Keep'
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                            : category === 'Improve'
+                                                ? 'border-amber-200 bg-amber-50 text-amber-700'
+                                                : 'border-slate-200 bg-slate-100 text-slate-700';
+
+                                    return (
+                                        <div key={category} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                                            <div className="mb-3 flex items-center justify-between gap-3">
+                                                <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${badgeClass}`}>
+                                                    {category}
+                                                </span>
+                                                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{categoryNotes.length} notes</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {categoryNotes.map((note) => (
+                                                    <article key={note._id} className="rounded-xl border border-slate-200 bg-white p-3">
+                                                        <h4 className="text-base font-semibold text-slate-900">{note.title}</h4>
+                                                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{note.description}</p>
+                                                        <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                                                            Author: {typeof note.authorId === 'string' ? 'Unknown' : note.authorId.name}
+                                                        </p>
+                                                    </article>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
                     </div>

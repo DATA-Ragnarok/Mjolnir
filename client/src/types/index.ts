@@ -73,10 +73,15 @@ export type ApiKeyInfo = {
   lastUsedAt?: string;
 };
 
+export const RETRO_NOTE_CATEGORIES = ['Keep', 'Improve', 'Note'] as const;
+
+export type RetroNoteCategory = (typeof RETRO_NOTE_CATEGORIES)[number];
+
 export type RetroNote = {
   _id: string;
   title: string;
   description: string;
+  category: RetroNoteCategory;
   sprintId: string;
   authorId: User | string;
   createdAt: string;
