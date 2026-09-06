@@ -83,13 +83,11 @@ export type RetroNote = {
   updatedAt: string;
 };
 
-export type RetroActionItemStatus = 'To Do' | 'Done' | 'V' | 'X' | 'Irrelevant';
-
 export type RetroActionItem = {
   _id: string;
   content: string;
   sprintId: string;
-  status: RetroActionItemStatus;
+  status: 'To Do' | 'Done';
   slot: number;
 };
 

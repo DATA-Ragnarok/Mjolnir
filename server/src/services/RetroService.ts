@@ -25,8 +25,6 @@ type ActionItemInput = {
     status?: RetroActionItemStatus;
 };
 
-const RETRO_ACTION_ITEM_STATUSES: RetroActionItemStatus[] = ['To Do', 'Done', 'V', 'X', 'Irrelevant'];
-
 export class RetroService {
     static async getRetroBootstrap() {
         const sprints = await SprintDAL.findAll();
@@ -81,7 +79,7 @@ export class RetroService {
 
         const normalized = items.map((item, index) => ({
             content: item.content.trim(),
-            status: this.normalizeActionItemStatus(item.status),
+            status: item.status ?? 'To Do',
             sprintId,
             slot: index,
         }));
@@ -92,17 +90,6 @@ export class RetroService {
         }
 
         return await RetroActionItemDAL.replaceSprintItems(normalized);
-    }
-
-    static async updateActionItemStatus(sprintId: string, itemId: string, status: RetroActionItemStatus) {
-        const normalizedStatus = this.normalizeActionItemStatus(status);
-        const updatedItem = await RetroActionItemDAL.updateStatus(itemId, sprintId, normalizedStatus);
-
-        if (!updatedItem) {
-            throw new AppError(404, 'Action item not found');
-        }
-
-        return updatedItem;
     }
 
     static async getSessionData(sprintId: string) {
@@ -117,9 +104,7 @@ export class RetroService {
         );
 
         const previousActionItems = previousSprint
-            ? (await RetroActionItemDAL.findBySprintId(previousSprint._id.toString())).filter(
-                (item) => item.status !== 'V' && item.status !== 'Irrelevant',
-            )
+            ? await RetroActionItemDAL.findBySprintId(previousSprint._id.toString())
             : [];
         const currentActionItems = await RetroActionItemDAL.findBySprintId(sprintId);
 
@@ -203,14 +188,6 @@ export class RetroService {
         }
 
         return await SprintDAL.findOne({}, { startDate: -1 });
-    }
-
-    private static normalizeActionItemStatus(status?: RetroActionItemStatus): RetroActionItemStatus {
-        if (status && RETRO_ACTION_ITEM_STATUSES.includes(status)) {
-            return status;
-        }
-
-        return 'To Do';
     }
 
     private static getSortedStatusHistory(story: UserStory) {
