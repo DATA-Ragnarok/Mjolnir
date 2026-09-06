@@ -67,7 +67,7 @@ const startServer = async () => {
       dbName: config.dbName
     });
     console.log(`Connected to MongoDB database: ${config.dbName}`);
-    
+
     if (process.env['NODE_ENV'] !== 'test') {
       app.listen(config.port, () => {
         console.log(`Server is running on port ${config.port}`);
@@ -81,7 +81,7 @@ const startServer = async () => {
 
 if (process.env['NODE_ENV'] !== 'test') {
   startServer();
-  
+
   // Periodic sprint migration check every hour
   setInterval(() => {
     SprintService.migrateExpiredSprints().catch(err => console.error('Sprint migration failed:', err));

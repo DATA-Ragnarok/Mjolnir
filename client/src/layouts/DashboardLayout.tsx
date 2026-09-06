@@ -8,7 +8,7 @@ const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const { openModal } = useModal();
   const location = useLocation();
-  
+
   const tabs = [
     { name: 'Epics', path: '/epics' },
     { name: 'Features', path: '/features' },
@@ -36,7 +36,7 @@ const DashboardLayout: React.FC = () => {
           </button>
           <div className="flex items-center space-x-3">
             <span className="text-sm font-medium text-gray-700">{user?.name}</span>
-            <button 
+            <button
               onClick={logout}
               className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors"
             >
@@ -52,11 +52,10 @@ const DashboardLayout: React.FC = () => {
             <Link
               key={tab.name}
               to={tab.path}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                isActive(tab.path)
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${isActive(tab.path)
                   ? 'border-indigo-500 text-indigo-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               {tab.name}
             </Link>

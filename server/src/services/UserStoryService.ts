@@ -18,11 +18,11 @@ export class UserStoryService {
       status: initialStatus,
       statusHistory: [{ status: initialStatus, changedAt: new Date() }],
     });
-    
+
     if (story.status === 'In Progress') {
       await StatusService.handleUserStoryStatusChange(story._id.toString(), story.status);
     }
-    
+
     return story;
   }
 

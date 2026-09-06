@@ -22,11 +22,11 @@ function App() {
 
   return (
     <Routes>
-      <Route 
-        path="/login" 
-        element={user ? <Navigate to="/epics" replace /> : <LoginPage />} 
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/epics" replace /> : <LoginPage />}
       />
-      
+
       {/* Protected Dashboard Routes */}
       <Route
         element={
