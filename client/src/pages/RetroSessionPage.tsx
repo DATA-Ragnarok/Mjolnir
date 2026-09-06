@@ -448,15 +448,6 @@ const RetroSessionPage: React.FC = () => {
                         </div>
                         {saveError ? <p className="mt-3 text-sm font-medium text-red-600">{saveError}</p> : null}
                         {saveSuccess ? <p className="mt-3 text-sm font-medium text-emerald-600">{saveSuccess}</p> : null}
-
-                        <button
-                            type="button"
-                            onClick={saveActionItems}
-                            disabled={filledSlotCount < 2}
-                            className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-                        >
-                            Save Action Items
-                        </button>
                     </div>
                 ) : null}
             </div>
@@ -496,6 +487,21 @@ const RetroSessionPage: React.FC = () => {
                                 } catch (saveErrorEvent) {
                                     console.error(saveErrorEvent);
                                     setSaveError('Could not save previous action item states.');
+                                    return;
+                                }
+                            }
+
+                            if (step === 4) {
+                                try {
+                                    setSaveError(null);
+                                    setSaveSuccess(null);
+                                    await saveActionItems();
+                                    if (filledSlotCount < 2) {
+                                        return;
+                                    }
+                                } catch (saveActionError) {
+                                    console.error(saveActionError);
+                                    setSaveError('Could not save action items.');
                                     return;
                                 }
                             }
