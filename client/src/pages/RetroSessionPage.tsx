@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Info } from 'lucide-react';
 import { useModal } from '../hooks/useModal';
-import { RetroActionItem, RetroSessionData } from '../types';
+import { RetroActionItem, RetroActionItemStatus, RetroSessionData } from '../types';
 import { retroService } from '../services/retroService';
 
 type Step = 1 | 2 | 3 | 4;
@@ -24,6 +24,18 @@ function toSlots(items: RetroActionItem[]) {
     }
 
     return slots;
+}
+
+function toStatuses(items: RetroActionItem[]): RetroActionItemStatus[] {
+    const statuses: RetroActionItemStatus[] = ['To Do', 'To Do', 'To Do'];
+
+    for (const item of items) {
+        if (item.slot >= 0 && item.slot <= 2 && ['To Do', 'Done', 'Ignored'].includes(item.status)) {
+            statuses[item.slot] = item.status as RetroActionItemStatus;
+        }
+    }
+
+    return statuses;
 }
 
 function formatDurationAsDays(hours: number) {
@@ -71,6 +83,7 @@ const RetroSessionPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [slots, setSlots] = useState<string[]>(['', '', '']);
+    const [statuses, setStatuses] = useState<RetroActionItemStatus[]>(['To Do', 'To Do', 'To Do']);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
@@ -79,6 +92,11 @@ const RetroSessionPage: React.FC = () => {
     const filledSlotCount = useMemo(
         () => slots.filter((slot) => slot.trim().length > 0).length,
         [slots],
+    );
+
+    const allFilledSlotsHaveStatus = useMemo(
+        () => slots.every((slot, index) => slot.trim().length === 0 || Boolean(statuses[index])),
+        [slots, statuses],
     );
 
     const loadSession = async () => {
@@ -109,6 +127,7 @@ const RetroSessionPage: React.FC = () => {
     useEffect(() => {
         if (!sessionData) return;
         setSlots(toSlots(sessionData.currentActionItems));
+        setStatuses(toStatuses(sessionData.currentActionItems));
     }, [sessionData]);
 
     const handleNext = () => {
@@ -123,6 +142,10 @@ const RetroSessionPage: React.FC = () => {
         setSlots((current) => current.map((slot, slotIndex) => (slotIndex === index ? value : slot)));
     };
 
+    const handleStatusChange = (index: number, value: RetroActionItemStatus) => {
+        setStatuses((current) => current.map((status, slotIndex) => (slotIndex === index ? value : status)));
+    };
+
     const saveActionItems = async () => {
         setSaveError(null);
         setSaveSuccess(null);
@@ -132,10 +155,15 @@ const RetroSessionPage: React.FC = () => {
             return;
         }
 
+        if (!allFilledSlotsHaveStatus) {
+            setSaveError('Select a state for each filled action item before saving.');
+            return;
+        }
+
         try {
             await retroService.saveActionItems(
                 sprintId,
-                slots.map((content) => ({ content, status: 'To Do' })),
+                slots.map((content, index) => ({ content, status: statuses[index] ?? 'To Do' })),
             );
             setSaveSuccess('Action items saved for next sprint.');
         } catch (actionItemError) {
@@ -318,16 +346,46 @@ const RetroSessionPage: React.FC = () => {
                         <h3 className="text-lg font-semibold text-slate-900">Create Action Items</h3>
                         <p className="mt-1 text-sm text-slate-600">Exactly 3 slots. At least 2 slots are required.</p>
 
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-4 space-y-4">
                             {slots.map((slot, index) => (
-                                <div key={`slot-${index}`}>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700">Action Item {index + 1}</label>
+                                <div key={`slot-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Action Item {index + 1}</label>
                                     <input
                                         value={slot}
                                         onChange={(event) => handleSlotChange(index, event.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-indigo-500"
                                         placeholder="Define an improvement action"
                                     />
+
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {[
+                                            { value: 'Done', symbol: 'V', description: 'Done' },
+                                            { value: 'To Do', symbol: 'X', description: 'To Do' },
+                                            { value: 'Ignored', symbol: 'O', description: 'Ignore' },
+                                        ].map((option) => {
+                                            const isSelected = statuses[index] === option.value;
+                                            return (
+                                                <button
+                                                    key={`${index}-${option.value}`}
+                                                    type="button"
+                                                    onClick={() => handleStatusChange(index, option.value as RetroActionItemStatus)}
+                                                    className={[
+                                                        'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition',
+                                                        isSelected
+                                                            ? option.value === 'Done'
+                                                                ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+                                                                : option.value === 'Ignored'
+                                                                  ? 'border-amber-200 bg-amber-100 text-amber-700'
+                                                                  : 'border-slate-300 bg-slate-200 text-slate-700'
+                                                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300',
+                                                    ].join(' ')}
+                                                >
+                                                    <span className="text-sm font-black">{option.symbol}</span>
+                                                    <span>{option.description}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -342,7 +400,8 @@ const RetroSessionPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={saveActionItems}
-                            className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                            disabled={!allFilledSlotsHaveStatus || filledSlotCount < 2}
+                            className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
                             Save Action Items
                         </button>
@@ -369,9 +428,20 @@ const RetroSessionPage: React.FC = () => {
                         Next
                     </button>
                 ) : (
-                    <Link to="/retro" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                    <button
+                        type="button"
+                        disabled={!allFilledSlotsHaveStatus || filledSlotCount < 2}
+                        onClick={() => {
+                            if (!allFilledSlotsHaveStatus || filledSlotCount < 2) {
+                                setSaveError('Select a state for each filled action item before finishing.');
+                                return;
+                            }
+                            window.location.href = '/retro';
+                        }}
+                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
                         Finish
-                    </Link>
+                    </button>
                 )}
             </div>
         </div>

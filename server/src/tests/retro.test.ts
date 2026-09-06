@@ -139,12 +139,18 @@ describe('Retro E2E Tests', () => {
             .put(`/api/retro/action-items/${currentSprintId}`)
             .set('Authorization', `Bearer ${token}`)
             .send({
-                items: [{ content: 'Improve PR reviews' }, { content: 'Reduce blocked items' }, { content: '' }],
+                items: [
+                    { content: 'Improve PR reviews', status: 'Done' },
+                    { content: 'Reduce blocked items', status: 'Ignored' },
+                    { content: '', status: 'To Do' },
+                ],
             });
 
         expect(validResponse.status).toBe(200);
         expect(Array.isArray(validResponse.body)).toBe(true);
         expect(validResponse.body).toHaveLength(3);
+        expect(validResponse.body[0].status).toBe('Done');
+        expect(validResponse.body[1].status).toBe('Ignored');
     });
 
     it('returns bootstrap data with current sprint id', async () => {

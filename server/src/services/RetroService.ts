@@ -3,7 +3,7 @@ import { UserStoryDAL } from '../dal/UserStoryDAL.js';
 import { RetroNoteDAL } from '../dal/RetroNoteDAL.js';
 import { RetroActionItemDAL } from '../dal/RetroActionItemDAL.js';
 import { UserStory, UserStoryStatusHistoryEntry } from '../models/UserStory.js';
-import { RetroActionItemStatus } from '../models/RetroActionItem.js';
+import { RETRO_ACTION_ITEM_STATUSES, RetroActionItemStatus } from '../models/RetroActionItem.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 type SprintStats = {
@@ -77,12 +77,21 @@ export class RetroService {
             throw new AppError(400, 'Exactly 3 action item slots are required');
         }
 
-        const normalized = items.map((item, index) => ({
-            content: item.content.trim(),
-            status: item.status ?? 'To Do',
-            sprintId,
-            slot: index,
-        }));
+        const validStatuses = new Set<RetroActionItemStatus>(RETRO_ACTION_ITEM_STATUSES);
+
+        const normalized = items.map((item, index) => {
+            const status = item.status ?? 'To Do';
+            if (!validStatuses.has(status)) {
+                throw new AppError(400, `Invalid action item status: ${String(status)}`);
+            }
+
+            return {
+                content: item.content.trim(),
+                status,
+                sprintId,
+                slot: index,
+            };
+        });
 
         const filledCount = normalized.filter((item) => item.content.length > 0).length;
         if (filledCount < 2) {

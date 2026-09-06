@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type RetroActionItemStatus = 'To Do' | 'Done';
+export const RETRO_ACTION_ITEM_STATUSES = ['To Do', 'Done', 'Ignored'] as const;
+
+export type RetroActionItemStatus = (typeof RETRO_ACTION_ITEM_STATUSES)[number];
 
 export type RetroActionItem = Document & {
     content: string;
@@ -14,7 +16,7 @@ export type RetroActionItem = Document & {
 const RetroActionItemSchema: Schema = new Schema({
     content: { type: String, default: '', trim: true },
     sprintId: { type: Schema.Types.ObjectId, ref: 'Sprint', required: true, index: true },
-    status: { type: String, enum: ['To Do', 'Done'], default: 'To Do' },
+    status: { type: String, enum: RETRO_ACTION_ITEM_STATUSES, default: 'To Do' },
     slot: { type: Number, required: true, min: 0, max: 2 },
 }, { timestamps: true });
 

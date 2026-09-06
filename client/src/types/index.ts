@@ -83,11 +83,15 @@ export type RetroNote = {
   updatedAt: string;
 };
 
+export const RETRO_ACTION_ITEM_STATUSES = ['To Do', 'Done', 'Ignored'] as const;
+
+export type RetroActionItemStatus = (typeof RETRO_ACTION_ITEM_STATUSES)[number];
+
 export type RetroActionItem = {
   _id: string;
   content: string;
   sprintId: string;
-  status: 'To Do' | 'Done';
+  status: RetroActionItemStatus;
   slot: number;
 };
 

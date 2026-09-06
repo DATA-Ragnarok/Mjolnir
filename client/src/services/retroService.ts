@@ -1,5 +1,5 @@
 import api from './api';
-import { RetroActionItem, RetroNote, RetroSessionData, Sprint } from '../types';
+import { RetroActionItem, RetroActionItemStatus, RetroNote, RetroSessionData, Sprint } from '../types';
 
 export const retroService = {
     async getBootstrap() {
@@ -30,13 +30,13 @@ export const retroService = {
         const response = await api.get<{
             sprintId: string;
             slots: string[];
-            statuses: Array<'To Do' | 'Done'>;
+            statuses: RetroActionItemStatus[];
             items: RetroActionItem[];
         }>('/retro/action-items', { params: { sprintId } });
         return response.data;
     },
 
-    async saveActionItems(sprintId: string, items: Array<{ content: string; status?: 'To Do' | 'Done' }>) {
+    async saveActionItems(sprintId: string, items: Array<{ content: string; status?: RetroActionItemStatus }>) {
         const response = await api.put<RetroActionItem[]>(`/retro/action-items/${sprintId}`, { items });
         return response.data;
     },
