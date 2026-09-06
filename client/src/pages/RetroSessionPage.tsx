@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Info } from 'lucide-react';
 import { useModal } from '../hooks/useModal';
-import { RetroActionItem, RetroSessionData } from '../types';
+import { RetroActionItem, RetroActionItemStatus, RetroSessionData } from '../types';
 import { retroService } from '../services/retroService';
 
 type Step = 1 | 2 | 3 | 4;
@@ -36,6 +36,12 @@ function formatDurationAsDays(hours: number) {
     if (Math.abs(remainder - 0.5) < 0.001) return `${wholeDays + 0.5}d`;
     return `${days.toFixed(1)}d`;
 }
+
+const RETRO_DECISION_OPTIONS: Array<{ value: RetroActionItemStatus; label: string; tone: string }> = [
+    { value: 'V', label: 'V', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    { value: 'X', label: 'X', tone: 'border-amber-200 bg-amber-50 text-amber-700' },
+    { value: 'Irrelevant', label: 'Irrelevant', tone: 'border-slate-200 bg-slate-100 text-slate-600' },
+];
 
 const StatsInfoModalContent: React.FC = () => (
     <div className="space-y-5 p-6">
@@ -121,6 +127,30 @@ const RetroSessionPage: React.FC = () => {
 
     const handleSlotChange = (index: number, value: string) => {
         setSlots((current) => current.map((slot, slotIndex) => (slotIndex === index ? value : slot)));
+    };
+
+    const handlePreviousActionDecision = async (itemId: string, decision: RetroActionItemStatus) => {
+        if (!sessionData?.previousSprint) {
+            return;
+        }
+
+        try {
+            const updatedItem = await retroService.updateActionItemStatus(sessionData.previousSprint._id, itemId, decision);
+            setSessionData((current) => {
+                if (!current) {
+                    return current;
+                }
+
+                return {
+                    ...current,
+                    previousActionItems: current.previousActionItems
+                        .map((item) => (item._id === itemId ? { ...item, status: updatedItem.status } : item))
+                        .filter((item) => item.status === 'X'),
+                };
+            });
+        } catch (decisionError) {
+            console.error(decisionError);
+        }
     };
 
     const saveActionItems = async () => {
@@ -218,7 +248,7 @@ const RetroSessionPage: React.FC = () => {
                         <ul className="mt-4 space-y-3">
                             {sessionData.previousActionItems.filter((item) => item.content.trim().length > 0).length === 0 ? (
                                 <li className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                                    No previous action items recorded.
+                                    No carry-forward action items remain for review.
                                 </li>
                             ) : (
                                 sessionData.previousActionItems
@@ -228,7 +258,28 @@ const RetroSessionPage: React.FC = () => {
                                             key={item._id}
                                             className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 shadow-sm"
                                         >
-                                            {item.content}
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                <p>{item.content}</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {RETRO_DECISION_OPTIONS.map((option) => {
+                                                        const active = item.status === option.value;
+
+                                                        return (
+                                                            <button
+                                                                key={`${item._id}-${option.value}`}
+                                                                type="button"
+                                                                onClick={() => void handlePreviousActionDecision(item._id, option.value)}
+                                                                className={[
+                                                                    'rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition',
+                                                                    active ? option.tone : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                                                ].join(' ')}
+                                                            >
+                                                                {option.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </li>
                                     ))
                             )}

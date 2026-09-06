@@ -102,7 +102,7 @@ export const getRetroActionItems = asyncHandler(async (req: Request, res: Respon
 export const saveRetroActionItems = asyncHandler(async (req: Request, res: Response) => {
     const sprintId = req.params['sprintId'] as string;
     const { items } = req.body as {
-        items?: Array<{ content: string; status?: 'To Do' | 'Done' }>;
+        items?: Array<{ content: string; status?: 'To Do' | 'Done' | 'V' | 'X' | 'Irrelevant' }>;
     };
 
     if (!isValidObjectId(sprintId)) {
@@ -115,6 +115,23 @@ export const saveRetroActionItems = asyncHandler(async (req: Request, res: Respo
 
     const saved = await RetroService.saveActionItems(sprintId, items);
     res.json(saved);
+});
+
+export const updateRetroActionItem = asyncHandler(async (req: Request, res: Response) => {
+    const sprintId = req.params['sprintId'] as string;
+    const itemId = req.params['itemId'] as string;
+    const { status } = req.body as { status?: 'To Do' | 'Done' | 'V' | 'X' | 'Irrelevant' };
+
+    if (!isValidObjectId(sprintId) || !isValidObjectId(itemId)) {
+        throw new AppError(400, 'Valid sprintId and itemId are required');
+    }
+
+    if (status === undefined) {
+        throw new AppError(400, 'status is required');
+    }
+
+    const updatedItem = await RetroService.updateActionItemStatus(sprintId, itemId, status);
+    res.json(updatedItem);
 });
 
 export const getRetroSessionData = asyncHandler(async (req: Request, res: Response) => {

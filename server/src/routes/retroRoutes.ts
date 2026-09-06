@@ -8,6 +8,7 @@ import {
     getRetroSessionData,
     getRetroStats,
     saveRetroActionItems,
+    updateRetroActionItem,
     updateRetroNote,
 } from '../controllers/RetroController.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -25,6 +26,7 @@ router.delete('/notes/:id', deleteRetroNote);
 
 router.get('/action-items', getRetroActionItems);
 router.put('/action-items/:sprintId', saveRetroActionItems);
+router.put('/action-items/:sprintId/:itemId', updateRetroActionItem);
 
 router.get('/session/:sprintId', getRetroSessionData);
 router.get('/stats/:sprintId', getRetroStats);

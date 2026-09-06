@@ -187,6 +187,28 @@ describe('Retro E2E Tests', () => {
         expect(response.body.stats).toBeDefined();
     });
 
+    it('only carries forward action items marked X into the next retro', async () => {
+        await request(app)
+            .put(`/api/retro/action-items/${previousSprintId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                items: [
+                    { content: 'Keep this one', status: 'X' },
+                    { content: 'Drop this one', status: 'V' },
+                    { content: 'Ignore this one', status: 'Irrelevant' },
+                ],
+            });
+
+        const response = await request(app)
+            .get(`/api/retro/session/${currentSprintId}`)
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.previousActionItems).toHaveLength(1);
+        expect(response.body.previousActionItems[0].content).toBe('Keep this one');
+        expect(response.body.previousActionItems[0].status).toBe('X');
+    });
+
     it('computes sprint stats response shape', async () => {
         const storyCreateResponse = await request(app)
             .post('/api/user-stories')
