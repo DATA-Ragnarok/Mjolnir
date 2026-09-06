@@ -72,3 +72,49 @@ export type ApiKeyInfo = {
   createdAt: string;
   lastUsedAt?: string;
 };
+
+export const RETRO_NOTE_CATEGORIES = ['Keep', 'Improve', 'Note'] as const;
+
+export type RetroNoteCategory = (typeof RETRO_NOTE_CATEGORIES)[number];
+
+export type RetroNote = {
+  _id: string;
+  title: string;
+  description: string;
+  category: RetroNoteCategory;
+  sprintId: string;
+  authorId: User | string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const RETRO_ACTION_ITEM_STATUSES = ['To Do', 'Done', 'Ignored'] as const;
+
+export type RetroActionItemStatus = (typeof RETRO_ACTION_ITEM_STATUSES)[number];
+
+export type RetroActionItem = {
+  _id: string;
+  content: string;
+  sprintId: string;
+  status: RetroActionItemStatus;
+  slot: number;
+};
+
+export type RetroStats = {
+  cycleTimeHours: number;
+  throughput: number;
+  blockedAging: Array<{
+    storyId: string;
+    title: string;
+    blockedHours: number;
+  }>;
+};
+
+export type RetroSessionData = {
+  sprint: Sprint;
+  previousSprint: Sprint | null;
+  previousActionItems: RetroActionItem[];
+  currentActionItems: RetroActionItem[];
+  notes: RetroNote[];
+  stats: RetroStats;
+};
