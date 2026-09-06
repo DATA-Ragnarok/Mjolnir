@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Info } from 'lucide-react';
+import { Ban, Check, Info, X } from 'lucide-react';
 import { useModal } from '../hooks/useModal';
 import { RetroActionItem, RetroActionItemStatus, RetroSessionData } from '../types';
 import { retroService } from '../services/retroService';
@@ -246,10 +246,30 @@ const RetroSessionPage: React.FC = () => {
                             ) : (
                                 reviewedPreviousItems.map((item) => {
                                     const selectedStatus = previousItemStatuses[item._id];
-                                    const toggleOptions: Array<{ value: RetroActionItemStatus; label: string; symbol: string }> = [
-                                        { value: 'Done', label: 'Done', symbol: 'V' },
-                                        { value: 'To Do', label: 'To Do', symbol: 'X' },
-                                        { value: 'Ignored', label: 'Ignore', symbol: 'O' },
+                                    const toggleOptions: Array<{
+                                        value: RetroActionItemStatus;
+                                        icon: React.ReactNode;
+                                        activeClass: string;
+                                        inactiveClass: string;
+                                    }> = [
+                                        {
+                                            value: 'Done',
+                                            icon: <Check size={16} strokeWidth={3} />,
+                                            activeClass: 'bg-emerald-100 text-emerald-700',
+                                            inactiveClass: 'text-slate-500 hover:bg-slate-100',
+                                        },
+                                        {
+                                            value: 'To Do',
+                                            icon: <X size={16} strokeWidth={3} />,
+                                            activeClass: 'bg-red-100 text-red-700',
+                                            inactiveClass: 'text-slate-500 hover:bg-slate-100',
+                                        },
+                                        {
+                                            value: 'Ignored',
+                                            icon: <Ban size={16} strokeWidth={3} />,
+                                            activeClass: 'bg-amber-100 text-amber-700',
+                                            inactiveClass: 'text-slate-500 hover:bg-slate-100',
+                                        },
                                     ];
 
                                     return (
@@ -267,20 +287,14 @@ const RetroSessionPage: React.FC = () => {
                                                             <button
                                                                 key={`${item._id}-${option.value}`}
                                                                 type="button"
+                                                                aria-label={option.value}
                                                                 onClick={() => handlePreviousStatusChange(item._id, option.value)}
                                                                 className={[
-                                                                    'flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition',
-                                                                    isSelected
-                                                                        ? option.value === 'Done'
-                                                                            ? 'bg-emerald-100 text-emerald-700'
-                                                                            : option.value === 'Ignored'
-                                                                              ? 'bg-amber-100 text-amber-700'
-                                                                              : 'bg-slate-200 text-slate-700'
-                                                                        : 'text-slate-500 hover:bg-slate-100',
+                                                                    'flex h-9 w-9 items-center justify-center rounded-full transition',
+                                                                    isSelected ? option.activeClass : option.inactiveClass,
                                                                 ].join(' ')}
                                                             >
-                                                                <span className="text-sm font-black">{option.symbol}</span>
-                                                                <span>{option.label}</span>
+                                                                {option.icon}
                                                             </button>
                                                         );
                                                     })}
