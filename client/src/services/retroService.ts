@@ -30,7 +30,7 @@ export const retroService = {
         const response = await api.get<{
             sprintId: string;
             slots: string[];
-            statuses: Array<'To Do' | 'Done'>;
+            statuses: RetroActionItemStatus[];
             items: RetroActionItem[];
         }>('/retro/action-items', { params: { sprintId } });
         return response.data;
