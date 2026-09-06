@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Info } from 'lucide-react';
+import { useModal } from '../hooks/useModal';
 import { RetroActionItem, RetroSessionData } from '../types';
 import { retroService } from '../services/retroService';
 
@@ -24,8 +26,46 @@ function toSlots(items: RetroActionItem[]) {
   return slots;
 }
 
+function formatDurationAsDays(hours: number) {
+  const days = hours / 8;
+  const wholeDays = Math.floor(days);
+  const remainder = days - wholeDays;
+
+  if (days === 0) return '0d';
+  if (remainder === 0) return `${wholeDays}d`;
+  if (Math.abs(remainder - 0.5) < 0.001) return `${wholeDays + 0.5}d`;
+  return `${days.toFixed(1)}d`;
+}
+
+const StatsInfoModalContent: React.FC = () => (
+  <div className="space-y-5 p-6">
+    <div>
+      <h3 className="text-xl font-bold text-gray-900">Sprint statistics guide</h3>
+      <p className="mt-1 text-sm text-gray-600">These numbers summarize how the sprint flowed and where work stalled.</p>
+    </div>
+
+    <div className="space-y-4">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Cycle Time</p>
+        <p className="mt-2 text-sm text-gray-700">The average time from a story entering progress until it is marked Done. Lower is better, and it helps estimate delivery speed.</p>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Throughput</p>
+        <p className="mt-2 text-sm text-gray-700">The number of stories completed in this sprint. It is a simple measure of how much value the team delivered.</p>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Blocked Time</p>
+        <p className="mt-2 text-sm text-gray-700">Blocked work is counted only during the team’s working window: Sunday through Thursday, from 9:30 AM to 5:30 PM. Time is shown in work-days, where 8 hours = 1 day and 4 hours = 0.5 day.</p>
+      </div>
+    </div>
+  </div>
+);
+
 const RetroSessionPage: React.FC = () => {
   const { sprintId = '' } = useParams<{ sprintId: string }>();
+  const { openModal } = useModal();
   const [step, setStep] = useState<Step>(1);
   const [sessionData, setSessionData] = useState<RetroSessionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +145,11 @@ const RetroSessionPage: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading retro session...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
   if (error || !sessionData) {
@@ -157,11 +201,21 @@ const RetroSessionPage: React.FC = () => {
 
         {step === 2 ? (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Sprint Statistics</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-gray-900">Sprint Statistics</h3>
+              <button
+                type="button"
+                aria-label="Statistics info"
+                onClick={() => openModal(<StatsInfoModalContent />, { maxWidth: 'lg', ribbonColor: 'bg-indigo-600' })}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-indigo-200 hover:text-indigo-600"
+              >
+                <Info size={16} />
+              </button>
+            </div>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Cycle Time</p>
-                <p className="mt-1 text-2xl font-bold text-gray-900">{sessionData.stats.cycleTimeHours}h</p>
+                <p className="mt-1 text-2xl font-bold text-gray-900">{formatDurationAsDays(sessionData.stats.cycleTimeHours)}</p>
               </div>
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Throughput</p>
@@ -175,7 +229,7 @@ const RetroSessionPage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-3 py-2 text-left font-semibold text-gray-600">Story</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Blocked Hours</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Blocked Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
@@ -189,7 +243,7 @@ const RetroSessionPage: React.FC = () => {
                     sessionData.stats.blockedAging.map((row) => (
                       <tr key={row.storyId}>
                         <td className="px-3 py-2 text-gray-800">{row.title}</td>
-                        <td className="px-3 py-2 text-gray-700">{row.blockedHours}</td>
+                        <td className="px-3 py-2 text-gray-700">{formatDurationAsDays(row.blockedHours)}</td>
                       </tr>
                     ))
                   )}

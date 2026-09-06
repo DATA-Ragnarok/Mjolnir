@@ -16,6 +16,10 @@ type SprintStats = {
   }>;
 };
 
+const WORKDAY_START_HOUR = 9.5;
+const WORKDAY_END_HOUR = 17.5;
+const WORKDAY_DAYS = new Set([0, 1, 2, 3, 4]);
+
 type ActionItemInput = {
   content: string;
   status?: RetroActionItemStatus;
@@ -221,8 +225,36 @@ export class RetroService {
       const overlapStart = segmentStart > windowStart ? segmentStart : windowStart;
       const overlapEnd = segmentEnd < windowEnd ? segmentEnd : windowEnd;
 
-      if (overlapEnd > overlapStart) {
-        totalMs += overlapEnd.getTime() - overlapStart.getTime();
+      if (overlapEnd <= overlapStart) {
+        continue;
+      }
+
+      const workdayCursor = new Date(Math.max(overlapStart.getTime(), windowStart.getTime()));
+      const workdayLimit = new Date(Math.min(overlapEnd.getTime(), windowEnd.getTime()));
+      const cursor = new Date(workdayCursor);
+
+      while (cursor <= workdayLimit) {
+        const dayStart = new Date(cursor);
+        dayStart.setHours(0, 0, 0, 0);
+
+        if (WORKDAY_DAYS.has(dayStart.getDay())) {
+          const workStart = new Date(dayStart);
+          workStart.setHours(Math.floor(WORKDAY_START_HOUR), (WORKDAY_START_HOUR % 1) * 60, 0, 0);
+
+          const workEnd = new Date(dayStart);
+          workEnd.setHours(Math.floor(WORKDAY_END_HOUR), (WORKDAY_END_HOUR % 1) * 60, 0, 0);
+
+          const intervalStart = new Date(Math.max(cursor.getTime(), workStart.getTime()));
+          const intervalEnd = new Date(Math.min(workdayLimit.getTime(), workEnd.getTime()));
+
+          if (intervalEnd > intervalStart) {
+            totalMs += intervalEnd.getTime() - intervalStart.getTime();
+          }
+        }
+
+        const nextDay = new Date(dayStart);
+        nextDay.setDate(dayStart.getDate() + 1);
+        cursor.setTime(nextDay.getTime());
       }
     }
 
