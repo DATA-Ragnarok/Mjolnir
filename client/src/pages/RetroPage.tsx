@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
+import { Calendar, Layout, List } from 'lucide-react';
+import CollapsibleSection from '../components/CollapsibleSection';
 import RetroNoteModal from '../components/RetroNoteModal';
-import { RetroNote, Sprint } from '../types';
+import { RetroActionItem, RetroNote, Sprint } from '../types';
 import { retroService } from '../services/retroService';
 import { getInitialsFromName } from '../utils/initials';
 
 type NoteModalState = {
     open: boolean;
     note: RetroNote | null;
+};
+
+type RetroView = 'notes' | 'actionItems';
+
+type ActionItemWithSprint = RetroActionItem & {
+    sprintName: string;
 };
 
 function getAuthorName(note: RetroNote) {
@@ -27,9 +34,12 @@ const RetroPage: React.FC = () => {
     const navigate = useNavigate();
     const [sprints, setSprints] = useState<Sprint[]>([]);
     const [selectedSprintId, setSelectedSprintId] = useState<string>('');
+    const [view, setView] = useState<RetroView>('notes');
     const [notes, setNotes] = useState<RetroNote[]>([]);
+    const [actionItems, setActionItems] = useState<ActionItemWithSprint[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingNotes, setLoadingNotes] = useState(false);
+    const [loadingActionItems, setLoadingActionItems] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [modalState, setModalState] = useState<NoteModalState>({ open: false, note: null });
 
@@ -65,6 +75,62 @@ const RetroPage: React.FC = () => {
         }
     };
 
+    const loadAllActionItems = async (allSprints: Sprint[]) => {
+        if (allSprints.length === 0) {
+            setActionItems([]);
+            return;
+        }
+
+        setLoadingActionItems(true);
+        try {
+            const sprintItems = await Promise.all(
+                allSprints.map(async (sprint) => {
+                    const response = await retroService.getActionItemsBySprint(sprint._id);
+                    return response.items
+                        .filter((item) => item.content.trim().length > 0)
+                        .map((item) => ({
+                            ...item,
+                            sprintName: sprint.name,
+                        }));
+                }),
+            );
+
+            const sprintOrder = new Map(
+                [...allSprints]
+                    .sort((left, right) => new Date(right.startDate).getTime() - new Date(left.startDate).getTime())
+                    .map((sprint, index) => [sprint._id, index]),
+            );
+
+            const merged = sprintItems
+                .flat()
+                .sort((left, right) => {
+                    const leftOrder = sprintOrder.get(left.sprintId) ?? Number.MAX_SAFE_INTEGER;
+                    const rightOrder = sprintOrder.get(right.sprintId) ?? Number.MAX_SAFE_INTEGER;
+                    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+                    return left.slot - right.slot;
+                });
+
+            setActionItems(merged);
+        } finally {
+            setLoadingActionItems(false);
+        }
+    };
+
+    const toDoActionItems = useMemo(
+        () => actionItems.filter((item) => item.status === 'To Do'),
+        [actionItems],
+    );
+
+    const doneActionItems = useMemo(
+        () => actionItems.filter((item) => item.status === 'Done'),
+        [actionItems],
+    );
+
+    const ignoredActionItems = useMemo(
+        () => actionItems.filter((item) => item.status === 'Ignored'),
+        [actionItems],
+    );
+
     useEffect(() => {
         const initialize = async () => {
             setLoading(true);
@@ -84,6 +150,7 @@ const RetroPage: React.FC = () => {
 
     useEffect(() => {
         if (!selectedSprintId) return;
+        if (view !== 'notes') return;
 
         const refresh = async () => {
             try {
@@ -102,7 +169,30 @@ const RetroPage: React.FC = () => {
         return () => {
             window.clearInterval(intervalId);
         };
-    }, [selectedSprintId]);
+    }, [selectedSprintId, view]);
+
+    useEffect(() => {
+        if (view !== 'actionItems') return;
+        if (sprints.length === 0) return;
+
+        const refresh = async () => {
+            try {
+                await loadAllActionItems(sprints);
+            } catch (actionItemsError) {
+                console.error(actionItemsError);
+                setError('Failed to load action items.');
+            }
+        };
+
+        void refresh();
+        const intervalId = window.setInterval(() => {
+            void refresh();
+        }, 5000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [sprints, view]);
 
     const openCreateModal = () => {
         setModalState({ open: true, note: null });
@@ -156,14 +246,34 @@ const RetroPage: React.FC = () => {
                     <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Retro</h1>
                     <p className="mt-1 text-sm text-gray-500">Capture sprint insights and run structured retrospectives.</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center bg-gray-100 p-1 rounded-xl w-fit">
                     <button
                         type="button"
-                        onClick={openCreateModal}
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                        onClick={() => setView('notes')}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'notes' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                        Add Note
+                        <Layout size={16} />
+                        <span>Notes</span>
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => setView('actionItems')}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'actionItems' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <List size={16} />
+                        <span>Action Items</span>
+                    </button>
+                </div>
+                <div className="flex items-center gap-2">
+                    {view === 'notes' ? (
+                        <button
+                            type="button"
+                            onClick={openCreateModal}
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                        >
+                            Add Note
+                        </button>
+                    ) : null}
                     <button
                         type="button"
                         onClick={handleStartRetro}
@@ -206,65 +316,123 @@ const RetroPage: React.FC = () => {
                 </div>
             </div>
 
-            {selectedSprint ? (
+            {selectedSprint && view === 'notes' ? (
                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
                     Retro board for <span className="font-semibold">{selectedSprint.name}</span>
                 </div>
             ) : null}
             {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
 
-            {loadingNotes && notes.length === 0 ? (
+            {view === 'notes' ? (
+                loadingNotes && notes.length === 0 ? (
+                    <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600"></div>
+                    </div>
+                ) : notes.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-lg font-bold text-indigo-600">
+                            +
+                        </div>
+                        <p className="text-base font-semibold text-slate-700">No retro notes yet</p>
+                        <p className="mt-1 text-sm text-slate-500">Add your first discussion note to capture team feedback.</p>
+                        <button
+                            type="button"
+                            onClick={openCreateModal}
+                            className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                        >
+                            Add Note
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {notes.map((note) => {
+                            const authorName = getAuthorName(note);
+                            const initials = getInitialsFromName(authorName);
+
+                            return (
+                                <button
+                                    key={note._id}
+                                    type="button"
+                                    onClick={() => openEditModal(note)}
+                                    className="group rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <h3 className="text-base font-semibold text-slate-900">{note.title}</h3>
+                                        <span className="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
+                                            Note
+                                        </span>
+                                    </div>
+
+                                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                                        {note.description?.trim() || 'No additional notes provided.'}
+                                    </p>
+
+                                    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                                        <div className="text-xs font-medium text-slate-500">By {authorName}</div>
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-[11px] font-bold text-indigo-700 shadow-sm">
+                                            {initials || '?'}
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )
+            ) : loadingActionItems && actionItems.length === 0 ? (
                 <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600"></div>
                 </div>
-            ) : notes.length === 0 ? (
+            ) : actionItems.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-lg font-bold text-indigo-600">
-                        +
-                    </div>
-                    <p className="text-base font-semibold text-slate-700">No retro notes yet</p>
-                    <p className="mt-1 text-sm text-slate-500">Add your first discussion note to capture team feedback.</p>
-                    <button
-                        type="button"
-                        onClick={openCreateModal}
-                        className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-                    >
-                        Add Note
-                    </button>
+                    <p className="text-base font-semibold text-slate-700">No action items yet</p>
+                    <p className="mt-1 text-sm text-slate-500">Run a retro session to generate action items for upcoming sprints.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {notes.map((note) => {
-                        const authorName = getAuthorName(note);
-                        const initials = getInitialsFromName(authorName);
-
-                        return (
-                            <button
-                                key={note._id}
-                                type="button"
-                                onClick={() => openEditModal(note)}
-                                className="group rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <h3 className="text-base font-semibold text-slate-900">{note.title}</h3>
-                                    <span className="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
-                                        Note
-                                    </span>
-                                </div>
-
-                                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                                    {note.description?.trim() || 'No additional notes provided.'}
-                                </p>
-
-                                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                                    <div className="text-xs font-medium text-slate-500">By {authorName}</div>
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-[11px] font-bold text-indigo-700 shadow-sm">
-                                        {initials || '?'}
+                <div className="space-y-4">
+                    <CollapsibleSection title="To Do" count={toDoActionItems.length} defaultOpen>
+                        <div className="space-y-3">
+                            {toDoActionItems.map((item) => (
+                                <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="text-sm leading-6 text-slate-700">{item.content}</p>
+                                        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                            {item.sprintName}
+                                        </span>
                                     </div>
                                 </div>
-                            </button>
-                        );
-                    })}
+                            ))}
+                        </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Done" count={doneActionItems.length} defaultOpen={false}>
+                        <div className="space-y-3">
+                            {doneActionItems.map((item) => (
+                                <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="text-sm leading-6 text-slate-700">{item.content}</p>
+                                        <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                            {item.sprintName}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Ignored" count={ignoredActionItems.length} defaultOpen={false}>
+                        <div className="space-y-3">
+                            {ignoredActionItems.map((item) => (
+                                <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="text-sm leading-6 text-slate-700">{item.content}</p>
+                                        <span className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                            {item.sprintName}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CollapsibleSection>
                 </div>
             )}
 
