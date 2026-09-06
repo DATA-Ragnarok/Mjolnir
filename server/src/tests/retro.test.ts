@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { connectTestDB, clearTestDB, closeTestDB } from './testHelper.js';
 import { jest } from '@jest/globals';
+import { RetroService } from '../services/RetroService.js';
 
 process.env['NODE_ENV'] = 'test';
 jest.setTimeout(30000);
@@ -223,5 +224,21 @@ describe('Retro E2E Tests', () => {
     expect(typeof statsResponse.body.cycleTimeHours).toBe('number');
     expect(typeof statsResponse.body.throughput).toBe('number');
     expect(Array.isArray(statsResponse.body.blockedAging)).toBe(true);
+  });
+
+  it('counts only Sunday-Thursday work hours for blocked duration', () => {
+    const windowStart = new Date('2026-01-04T00:00:00.000Z');
+    const windowEnd = new Date('2026-01-09T23:59:59.000Z');
+
+    const blockedMs = (RetroService as any).getBlockedDurationWithinWindow(
+      [
+        { status: 'Blocked', changedAt: new Date('2026-01-04T10:00:00.000Z') },
+        { status: 'In Progress', changedAt: new Date('2026-01-09T11:00:00.000Z') },
+      ],
+      windowStart,
+      windowEnd,
+    );
+
+    expect(Number((blockedMs / (1000 * 60 * 60)).toFixed(2))).toBe(33);
   });
 });
