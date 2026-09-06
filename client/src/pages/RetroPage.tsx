@@ -1,31 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
 import RetroNoteModal from '../components/RetroNoteModal';
 import { RetroNote, Sprint } from '../types';
 import { retroService } from '../services/retroService';
+import { getInitialsFromName } from '../utils/initials';
 
 type NoteModalState = {
   open: boolean;
   note: RetroNote | null;
 };
 
-function getAuthorLabel(note: RetroNote) {
+function getAuthorName(note: RetroNote) {
   if (typeof note.authorId === 'string') {
     return 'Unknown';
   }
 
-  if (!note.authorId.name) {
-    return note.authorId.email;
+  if (!note.authorId?.name) {
+    return note.authorId?.email ?? 'Unknown';
   }
 
   return note.authorId.name;
-}
-
-function getCoinText(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '?';
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
 }
 
 const RetroPage: React.FC = () => {
@@ -34,8 +29,14 @@ const RetroPage: React.FC = () => {
   const [selectedSprintId, setSelectedSprintId] = useState<string>('');
   const [notes, setNotes] = useState<RetroNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingNotes, setLoadingNotes] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalState, setModalState] = useState<NoteModalState>({ open: false, note: null });
+
+  const activeSprint = useMemo(() => {
+    const now = new Date();
+    return sprints.find((sprint) => new Date(sprint.startDate) <= now && new Date(sprint.endDate) >= now) || sprints[0];
+  }, [sprints]);
 
   const selectedSprint = useMemo(
     () => sprints.find((sprint) => sprint._id === selectedSprintId) ?? null,
@@ -55,8 +56,13 @@ const RetroPage: React.FC = () => {
       return;
     }
 
-    const fetchedNotes = await retroService.getNotesBySprint(sprintId);
-    setNotes(fetchedNotes);
+    setLoadingNotes(true);
+    try {
+      const fetchedNotes = await retroService.getNotesBySprint(sprintId);
+      setNotes(fetchedNotes);
+    } finally {
+      setLoadingNotes(false);
+    }
   };
 
   useEffect(() => {
@@ -134,8 +140,12 @@ const RetroPage: React.FC = () => {
     navigate(`/retro/session/${selectedSprintId}`);
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading retro board...</div>;
+  if (loading && sprints.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
   return (
@@ -164,19 +174,26 @@ const RetroPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <label className="text-sm font-semibold text-gray-700">Sprint Selector</label>
+      <div className="max-w-7xl mx-auto w-full flex items-center space-x-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <Calendar size={20} className="text-gray-400" />
         <select
           value={selectedSprintId}
           onChange={(event) => setSelectedSprintId(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          className="bg-transparent border-none text-lg font-bold text-gray-900 focus:ring-0 cursor-pointer"
         >
+          <option value="">Select sprint</option>
           {sprints.map((sprint) => (
             <option key={sprint._id} value={sprint._id}>
               {sprint.name}
             </option>
           ))}
         </select>
+
+        {activeSprint && selectedSprintId === activeSprint._id && (
+          <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wider">
+            Active Now
+          </span>
+        )}
       </div>
 
       {selectedSprint ? (
@@ -184,15 +201,19 @@ const RetroPage: React.FC = () => {
       ) : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      {notes.length === 0 ? (
+      {loadingNotes && notes.length === 0 ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : notes.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
           No retro notes yet. Add your first discussion note.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {notes.map((note) => {
-            const author = getAuthorLabel(note);
-            const coin = getCoinText(author);
+            const authorName = getAuthorName(note);
+            const initials = getInitialsFromName(authorName);
 
             return (
               <button
@@ -202,11 +223,10 @@ const RetroPage: React.FC = () => {
                 className="rounded-lg border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:shadow-md"
               >
                 <h3 className="text-base font-semibold text-gray-900">{note.title}</h3>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
-                    {coin}
-                  </span>
-                  <p className="text-xs text-gray-500">written by {author}</p>
+                <div className="mt-3 flex items-center justify-end">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs border-2 border-white shadow-sm">
+                    {initials || '?'}
+                  </div>
                 </div>
               </button>
             );
