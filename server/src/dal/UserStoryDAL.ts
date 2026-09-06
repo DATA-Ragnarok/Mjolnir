@@ -19,6 +19,24 @@ export class UserStoryDAL {
     return await UserStory.findByIdAndUpdate(id, data, { new: true }).populate('assignedUser');
   }
 
+  static async updateWithStatusTransition(
+    id: string,
+    data: Partial<UserStoryType>,
+    newStatus: UserStoryType['status'],
+  ) {
+    const updateData = {
+      ...data,
+      $push: {
+        statusHistory: {
+          status: newStatus,
+          changedAt: new Date(),
+        },
+      },
+    };
+
+    return await UserStory.findByIdAndUpdate(id, updateData, { new: true }).populate('assignedUser');
+  }
+
   static async delete(id: string) {
     return await UserStory.findByIdAndDelete(id);
   }

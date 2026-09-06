@@ -28,7 +28,7 @@ const SprintsPage: React.FC = () => {
   const handleOpenUserStory = (storyId?: string, initialSprintId?: string) => {
     const story = storyId ? userStories.find(s => s._id === storyId) : undefined;
     openModal(
-      <UserStoryModalContent 
+      <UserStoryModalContent
         userStory={story}
         initialSprintId={initialSprintId}
         onSubmit={() => {
@@ -42,7 +42,7 @@ const SprintsPage: React.FC = () => {
 
   const handleCreateSprint = () => {
     openModal(
-      <SprintModalContent 
+      <SprintModalContent
         onSubmit={refetchSprints}
       />,
       { maxWidth: '2xl' }
@@ -50,7 +50,11 @@ const SprintsPage: React.FC = () => {
   };
 
   if (loadingSprints || loadingStories) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
   return (
@@ -64,18 +68,16 @@ const SprintsPage: React.FC = () => {
         <div className="flex items-center bg-gray-100 p-1 rounded-xl w-fit">
           <button
             onClick={() => setView('kanban')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              view === 'kanban' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'kanban' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             <Layout size={16} />
             <span>Kanban</span>
           </button>
           <button
             onClick={() => setView('backlog')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              view === 'backlog' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'backlog' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             <List size={16} />
             <span>Backlog</span>
@@ -102,16 +104,16 @@ const SprintsPage: React.FC = () => {
 
       {view === 'backlog' ? (
         <div className="max-w-7xl mx-auto w-full">
-          <BacklogView 
-            sprints={sprints} 
-            userStories={userStories} 
-            onOpenStory={handleOpenUserStory} 
+          <BacklogView
+            sprints={sprints}
+            userStories={userStories}
+            onOpenStory={handleOpenUserStory}
           />
         </div>
       ) : (
-        <KanbanView 
-          sprints={sprints} 
-          userStories={userStories} 
+        <KanbanView
+          sprints={sprints}
+          userStories={userStories}
           selectedSprintId={selectedSprintId}
           setSelectedSprintId={setSelectedSprintId}
           onOpenStory={handleOpenUserStory}
