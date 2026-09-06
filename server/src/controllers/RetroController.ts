@@ -102,7 +102,7 @@ export const getRetroActionItems = asyncHandler(async (req: Request, res: Respon
 export const saveRetroActionItems = asyncHandler(async (req: Request, res: Response) => {
     const sprintId = req.params['sprintId'] as string;
     const { items } = req.body as {
-        items?: Array<{ content: string; status?: 'To Do' | 'Done' }>;
+        items?: Array<{ content: string; status?: 'To Do' | 'Done' | 'Ignored' }>;
     };
 
     if (!isValidObjectId(sprintId)) {

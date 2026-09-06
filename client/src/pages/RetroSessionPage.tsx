@@ -120,16 +120,54 @@ const RetroSessionPage: React.FC = () => {
     useEffect(() => {
         if (!sessionData) return;
         setSlots(toSlots(sessionData.currentActionItems));
-        setPreviousItemStatuses({});
+        setPreviousItemStatuses(
+            sessionData.previousActionItems.reduce<Record<string, RetroActionItemStatus>>((accumulator, item) => {
+                if (item.content.trim().length > 0) {
+                    accumulator[item._id] = item.status;
+                }
+                return accumulator;
+            }, {}),
+        );
     }, [sessionData]);
 
-    const handleNext = () => {
+    const savePreviousActionItemStatuses = async () => {
+        if (!sessionData?.previousSprint || reviewedPreviousItems.length === 0) {
+            return;
+        }
+
+        const previousItemsForSave = Array.from({ length: 3 }, (_, slotIndex) => {
+            const item = sessionData.previousActionItems.find((previousItem) => previousItem.slot === slotIndex);
+            if (!item) {
+                return { content: '', status: 'To Do' as RetroActionItemStatus };
+            }
+
+            return {
+                content: item.content,
+                status: previousItemStatuses[item._id] ?? item.status ?? 'To Do',
+            };
+        });
+
+        await retroService.saveActionItems(sessionData.previousSprint._id, previousItemsForSave);
+    };
+
+    const handleNext = async () => {
         if (step === 1 && !allPreviousItemsReviewed) {
             setSaveError('Select a state for every previous action item before continuing.');
             return;
         }
 
         setSaveError(null);
+
+        if (step === 1) {
+            try {
+                await savePreviousActionItemStatuses();
+            } catch (saveErrorEvent) {
+                console.error(saveErrorEvent);
+                setSaveError('Could not save previous action item states.');
+                return;
+            }
+        }
+
         if (step < 4) setStep((current) => (current + 1) as Step);
     };
 
@@ -436,7 +474,7 @@ const RetroSessionPage: React.FC = () => {
                 {canGoNext ? (
                     <button
                         type="button"
-                        onClick={handleNext}
+                        onClick={() => void handleNext()}
                         disabled={step === 1 && !allPreviousItemsReviewed}
                         className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
@@ -446,7 +484,22 @@ const RetroSessionPage: React.FC = () => {
                     <button
                         type="button"
                         disabled={filledSlotCount < 2}
-                        onClick={() => {
+                        onClick={async () => {
+                            if (step === 1 && !allPreviousItemsReviewed) {
+                                setSaveError('Select a state for every previous action item before finishing.');
+                                return;
+                            }
+
+                            if (step === 1) {
+                                try {
+                                    await savePreviousActionItemStatuses();
+                                } catch (saveErrorEvent) {
+                                    console.error(saveErrorEvent);
+                                    setSaveError('Could not save previous action item states.');
+                                    return;
+                                }
+                            }
+
                             if (filledSlotCount < 2) {
                                 setSaveError('Add at least 2 action items before finishing.');
                                 return;
