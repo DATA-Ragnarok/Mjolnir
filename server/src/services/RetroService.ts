@@ -117,7 +117,9 @@ export class RetroService {
         );
 
         const previousActionItems = previousSprint
-            ? (await RetroActionItemDAL.findBySprintId(previousSprint._id.toString())).filter((item) => item.status === 'X')
+            ? (await RetroActionItemDAL.findBySprintId(previousSprint._id.toString())).filter(
+                (item) => item.status !== 'V' && item.status !== 'Irrelevant',
+            )
             : [];
         const currentActionItems = await RetroActionItemDAL.findBySprintId(sprintId);
 
