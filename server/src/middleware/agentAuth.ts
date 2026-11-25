@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiKeyService } from '../services/ApiKeyService.js';
+import { AgentAuthService } from '../services/AgentAuthService.js';
 
 export const agentAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -34,6 +35,18 @@ export const agentAuthMiddleware = async (req: Request, res: Response, next: Nex
         const token = authHeader.substring(7).trim();
         if (token.startsWith('mj_live_')) {
           key = token;
+        } else if (token) {
+          // Short-lived agent JWT issued by the device-code flow
+          const result = await AgentAuthService.validateAgentToken(token);
+          if (!result) {
+            return res.status(401).json({ message: 'Invalid, expired or revoked agent token' });
+          }
+          if (!result.user.isApproved) {
+            return res.status(403).json({ message: 'User not approved' });
+          }
+          req.user = result.user;
+          req.agentJti = result.jti;
+          return next();
         }
       }
     }

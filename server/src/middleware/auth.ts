@@ -13,7 +13,10 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const token = authHeader.split(' ')[1];
     if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
-    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId?: string; typ?: string };
+    if (decoded.typ === 'agent' || !decoded.userId) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
     
     const user = await UserService.findById(decoded.userId);
     if (!user) {

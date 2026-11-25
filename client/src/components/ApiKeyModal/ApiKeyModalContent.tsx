@@ -5,6 +5,7 @@ import { ApiKeyInfo } from '../../types';
 import { useModal } from '../../hooks/useModal';
 import { ApiKeyCard } from './components/ApiKeyCard';
 import { SecurityGuardrailsCard } from './components/SecurityGuardrailsCard';
+import { CantUseMcpCard } from './components/CantUseMcpCard';
 import { AssistantConfigTabs } from './components/AssistantConfigTabs';
 
 export const ApiKeyModalContent: React.FC = () => {
@@ -120,6 +121,8 @@ export const ApiKeyModalContent: React.FC = () => {
             </div>
           </div>
         )}
+
+        <CantUseMcpCard backendBase={backendBase} />
       </div>
     </div>
   );

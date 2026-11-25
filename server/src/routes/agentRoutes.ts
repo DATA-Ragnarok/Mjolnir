@@ -11,11 +11,17 @@ import {
   listUsers,
   getCurrentUser
 } from '../controllers/AgentController.js';
+import { getSkills, getBootstrapSkill } from '../controllers/AgentAuthController.js';
 import { agentAuthMiddleware } from '../middleware/agentAuth.js';
 
 const router = Router();
 
+// Public: static bootstrap skill file (no secrets)
+router.get('/bootstrap-skill', getBootstrapSkill);
+
 router.use(agentAuthMiddleware);
+
+router.get('/skills', getSkills);
 
 router.get('/us', listUserStories);
 router.get('/us/:id', getUserStory);

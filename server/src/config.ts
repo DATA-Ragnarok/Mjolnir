@@ -8,6 +8,7 @@ export const config = {
   dbName: process.env['DB_NAME'] || 'mjolnir',
   jwtSecret: process.env['JWT_SECRET'] || 'secret',
   frontendUrl: process.env['FRONTEND_URL'] || 'http://localhost:5173',
+  publicUrl: (process.env['MJOLNIR_PUBLIC_URL'] || '').replace(/\/$/, ''),
   googleClientId: process.env['GOOGLE_CLIENT_ID'],
 };
 

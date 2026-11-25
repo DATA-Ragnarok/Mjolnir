@@ -1,8 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './pages/LoginPage'
 import EpicsPage from './pages/EpicsPage'
 import FeaturesPage from './pages/FeaturesPage'
+import AgentAuthPage from './pages/AgentAuthPage'
 import SprintsPage from './pages/SprintsPage'
 import RetroPage from './pages/RetroPage'
 import RetroSessionPage from './pages/RetroSessionPage'
@@ -11,6 +12,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  const loginRedirect = (location.state as { from?: string } | null)?.from || '/epics';
 
   if (loading) {
     return (
@@ -24,7 +27,7 @@ function App() {
     <Routes>
       <Route
         path="/login"
-        element={user ? <Navigate to="/epics" replace /> : <LoginPage />}
+        element={user ? <Navigate to={loginRedirect} replace /> : <LoginPage />}
       />
 
       {/* Protected Dashboard Routes */}
@@ -42,6 +45,7 @@ function App() {
         <Route path="/sprints" element={<SprintsPage />} />
         <Route path="/retro" element={<RetroPage />} />
         <Route path="/retro/session/:sprintId" element={<RetroSessionPage />} />
+        <Route path="/agent/auth" element={<AgentAuthPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/epics" replace />} />
