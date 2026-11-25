@@ -1,14 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Download, HelpCircle, Trash2 } from 'lucide-react';
+import { Check, Copy, Download, HelpCircle, Trash2 } from 'lucide-react';
 import { agentAuthService, AgentSessionInfo } from '../../../services/agentAuthService';
 
 type CantUseMcpCardProps = {
   backendBase: string;
 };
 
+type SkillTarget = 'copilot' | 'gemini' | 'claude';
+
+const SKILL_DIRS: Record<SkillTarget, { label: string; dir: string }> = {
+  copilot: { label: 'GitHub Copilot', dir: '~/.copilot/skills/mjolnir' },
+  gemini: { label: 'Gemini / Antigravity', dir: '~/.gemini/skills/mjolnir' },
+  claude: { label: 'Claude', dir: '~/.claude/skills/mjolnir' },
+};
+
 export const CantUseMcpCard: React.FC<CantUseMcpCardProps> = ({ backendBase }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [sessions, setSessions] = useState<AgentSessionInfo[]>([]);
+  const [target, setTarget] = useState<SkillTarget>('copilot');
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const skillUrl = `${backendBase}/api/agent/bootstrap-skill`;
+  const { dir } = SKILL_DIRS[target];
+  const installCommand = `mkdir -p ${dir} && curl -fsSL ${skillUrl} -o ${dir}/SKILL.md`;
+  const agentPrompt = `Install the Mjolnir skill: download ${skillUrl} and save it as SKILL.md inside a "mjolnir" folder in your personal skills directory (for example ${dir}/SKILL.md). Then use it to show my Mjolnir tasks.`;
 
   const loadSessions = useCallback(async () => {
     try {
@@ -27,6 +42,22 @@ export const CantUseMcpCard: React.FC<CantUseMcpCardProps> = ({ backendBase }) =
     await loadSessions();
   };
 
+  const handleCopy = (key: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const CopyButton: React.FC<{ id: string; text: string }> = ({ id, text }) => (
+    <button
+      onClick={() => handleCopy(id, text)}
+      className="shrink-0 flex items-center text-xs text-indigo-700 hover:text-indigo-900"
+    >
+      {copied === id ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
+      {copied === id ? 'Copied' : 'Copy'}
+    </button>
+  );
+
   return (
     <div className="mt-8 border border-gray-200 rounded-xl p-4">
       <button
@@ -38,20 +69,49 @@ export const CantUseMcpCard: React.FC<CantUseMcpCardProps> = ({ backendBase }) =
 
       {open && (
         <div className="mt-4 text-sm text-gray-700 space-y-4">
-          <p>If your organization blocks external MCP servers, your agent can use Mjolnir over plain HTTP with a skill file:</p>
-          <ol className="list-decimal ml-5 space-y-1">
-            <li>Download the skill file and add it to your agent&apos;s instructions or skills.</li>
-            <li>
-              Set the environment variable <code className="bg-gray-100 px-1 rounded">MJOLNIR_URL={backendBase}</code>
-            </li>
-            <li>Ask your agent to use the Mjolnir skill. It opens a browser for you to approve (8-hour access).</li>
-          </ol>
+          <p>
+            If your organization blocks external MCP servers, your agent can use Mjolnir over plain HTTP. Install the skill
+            once; every new session loads it automatically. You approve in the browser about once every 8 hours.
+          </p>
+
+          <div className="flex gap-2">
+            {(Object.keys(SKILL_DIRS) as SkillTarget[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTarget(t)}
+                className={`px-3 py-1 rounded-lg border text-xs ${
+                  target === t ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-700'
+                }`}
+              >
+                {SKILL_DIRS[t].label}
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold text-gray-900">1. Run this once in a terminal</span>
+              <CopyButton id="cmd" text={installCommand} />
+            </div>
+            <pre className="bg-gray-900 text-gray-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap break-all">
+              {installCommand}
+            </pre>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold text-gray-900">Or paste this to your agent and let it install itself</span>
+              <CopyButton id="prompt" text={agentPrompt} />
+            </div>
+            <pre className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs whitespace-pre-wrap">{agentPrompt}</pre>
+          </div>
+
           <a
-            href={`${backendBase}/api/agent/bootstrap-skill`}
-            download="mjolnir-agent-skill.md"
-            className="inline-flex items-center px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+            href={skillUrl}
+            download="SKILL.md"
+            className="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            <Download size={14} className="mr-2" /> Download mjolnir-agent-skill.md
+            <Download size={14} className="mr-2" /> Download SKILL.md manually
           </a>
 
           <div>

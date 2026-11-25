@@ -135,6 +135,8 @@ describe('Agent device-code auth & skills', () => {
     const res = await request(app).get('/api/agent/bootstrap-skill');
     expect(res.status).toBe(200);
     expect(res.text).toContain('MJOLNIR_URL');
+    expect(res.text.startsWith('---\nname: mjolnir')).toBe(true);
+    expect(res.text).toMatch(/otherwise `http/);
     expect(res.text).not.toContain('{{BASE_URL}}');
   });
 });

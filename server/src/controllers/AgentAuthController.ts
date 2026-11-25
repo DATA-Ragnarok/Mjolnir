@@ -73,6 +73,6 @@ export const getSkills = asyncHandler(async (req: Request, res: Response) => {
 
 export const getBootstrapSkill = asyncHandler(async (req: Request, res: Response) => {
   const baseUrl = config.publicUrl || `${req.protocol}://${req.get('host')}`;
-  res.type('text/markdown').setHeader('Content-Disposition', 'attachment; filename="mjolnir-agent-skill.md"');
+  res.type('text/markdown').setHeader('Content-Disposition', 'attachment; filename="SKILL.md"');
   res.send(SkillService.getBootstrapSkill(baseUrl));
 });

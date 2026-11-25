@@ -111,3 +111,8 @@ On the MCP setup page in the web app, add a **"Can't use MCP?"** button. It open
 - Token cached in `~/.mjolnir/agent.json` (chmod 600, keyed by `MJOLNIR_URL`). Reused until `expiresAt` or a `401`.
 - Skills cached in `~/.mjolnir/skills.json` with their ETag. Each session sends one `GET /api/agent/skills` with `If-None-Match`: `304` = token valid and skills current, `200` = refresh cache, `401` = re-authenticate.
 - Server unchanged; only the bootstrap template changed.
+
+## 12. One-step install (added)
+- The bootstrap file is a real skill (`name: mjolnir` + `description` front matter), so agents load it automatically in new sessions.
+- The server URL is baked in (`MJOLNIR_URL` env var is an optional override).
+- The "Can't use MCP?" panel has per-agent install commands (personal skills dirs: `~/.copilot/skills/mjolnir/`, `~/.gemini/skills/mjolnir/`, `~/.claude/skills/mjolnir/`) plus a copy-paste prompt so the agent installs itself.

@@ -1,10 +1,14 @@
+---
+name: mjolnir
+description: Use when the user asks about or wants to change their Mjolnir board (tasks, user stories, epics, features, sprints, story status). Works over plain HTTP, no MCP needed.
+---
 # Mjolnir Agent Skill (bootstrap)
 
 Use this skill to work with the user's Mjolnir board (epics, features, user stories) over plain HTTP, without MCP.
 This file is static. All capabilities are fetched from the server and cached locally.
 
 ## Setup
-- Environment variable `MJOLNIR_URL` = server origin, e.g. `{{BASE_URL}}` (no trailing slash). If it is not set, ask the user for it.
+- Server origin: use the environment variable `MJOLNIR_URL` if set, otherwise `{{BASE_URL}}` (no trailing slash). Below, `$MJOLNIR_URL` means this value.
 - You need `curl` (or any HTTP client) and, ideally, a way to open a browser.
 - Cache directory: `~/.mjolnir/`. Create it with `chmod 700`. Files:
   - `~/.mjolnir/agent.json`: `{ "url": "<MJOLNIR_URL>", "token": "...", "expiresAt": "..." }`
