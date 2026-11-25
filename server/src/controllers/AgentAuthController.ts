@@ -72,7 +72,10 @@ export const getSkills = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getBootstrapSkill = asyncHandler(async (req: Request, res: Response) => {
-  const baseUrl = config.publicUrl || `${req.protocol}://${req.get('host')}`;
+  const host = req.get('host') || '';
+  const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host);
+  // Behind a proxy req.protocol may be http; always advertise https for non-local hosts
+  const baseUrl = config.publicUrl || `${isLocal ? req.protocol : 'https'}://${host}`;
   res.type('text/markdown').setHeader('Content-Disposition', 'attachment; filename="SKILL.md"');
   res.send(SkillService.getBootstrapSkill(baseUrl));
 });
