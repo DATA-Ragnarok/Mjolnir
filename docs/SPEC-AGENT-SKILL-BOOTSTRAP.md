@@ -106,3 +106,8 @@ On the MCP setup page in the web app, add a **"Can't use MCP?"** button. It open
 - Explains in 3 steps: download the skill file, set `MJOLNIR_URL`, tell the agent to use the skill.
 - Offers a **Download `mjolnir-agent-skill.md`** button (served by the server, with the correct base URL pre-filled in the example).
 - Lists "Connected agents" (created, last used, revoke).
+
+## 11. Local caching (added)
+- Token cached in `~/.mjolnir/agent.json` (chmod 600, keyed by `MJOLNIR_URL`). Reused until `expiresAt` or a `401`.
+- Skills cached in `~/.mjolnir/skills.json` with their ETag. Each session sends one `GET /api/agent/skills` with `If-None-Match`: `304` = token valid and skills current, `200` = refresh cache, `401` = re-authenticate.
+- Server unchanged; only the bootstrap template changed.
